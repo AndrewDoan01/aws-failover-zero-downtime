@@ -23,6 +23,18 @@ variable "eks_cluster_name" {
   nullable    = true
 }
 
+variable "create_rds_cpu_alarm" {
+  description = "Whether to create the RDS CPU alarm."
+  type        = bool
+  default     = true
+}
+
+variable "create_eks_failed_requests_alarm" {
+  description = "Whether to create the EKS failed requests alarm."
+  type        = bool
+  default     = true
+}
+
 variable "cpu_alarm_threshold" {
   description = "CPU alarm threshold percentage for RDS."
   type        = number

@@ -24,3 +24,12 @@ terraform.rc
 Thumbs.db
 .vscode/
 .idea/
+
+# vars
+terraform.tfvars
+
+# AWS credential exports
+accesskey.csv
+
+# lock state file
+.terraform.lock.hcl

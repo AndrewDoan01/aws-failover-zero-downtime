@@ -10,8 +10,19 @@ module "eks" {
   vpc_id     = var.vpc_id
   subnet_ids = var.subnet_ids
 
-  # node group default
+  eks_managed_node_group_defaults = {
+    ami_type       = "AL2_x86_64"
+    instance_types = var.node_instance_types
+  }
 
-  # tag
+  eks_managed_node_groups = {
+    (var.node_group_name) = {
+      desired_size   = var.node_desired_size
+      min_size       = var.node_min_size
+      max_size       = var.node_max_size
+      instance_types = var.node_instance_types
+    }
+  }
+
   tags = var.tags
 }

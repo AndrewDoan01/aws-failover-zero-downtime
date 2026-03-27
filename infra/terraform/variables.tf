@@ -4,6 +4,27 @@ variable "aws_region" {
   default     = "ap-southeast-1"
 }
 
+variable "aws_access_key_id" {
+  description = "AWS access key ID (optional, prefer environment/shared credentials when possible)."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "aws_secret_access_key" {
+  description = "AWS secret access key (optional, prefer environment/shared credentials when possible)."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "aws_session_token" {
+  description = "AWS session token for temporary credentials (optional)."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
 variable "project_name" {
   description = "Project name used across resources."
   type        = string

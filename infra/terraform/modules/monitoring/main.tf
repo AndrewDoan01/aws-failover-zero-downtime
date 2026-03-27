@@ -4,7 +4,7 @@ resource "aws_sns_topic" "alerts" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "rds_cpu_high" {
-  count = var.rds_instance_id == null ? 0 : 1
+  count = var.create_rds_cpu_alarm ? 1 : 0
 
   alarm_name          = "${var.project_name}-rds-cpu-high"
   alarm_description   = "High CPU utilization on RDS instance"
@@ -27,7 +27,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_cpu_high" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "eks_failed_requests" {
-  count = var.eks_cluster_name == null ? 0 : 1
+  count = var.create_eks_failed_requests_alarm ? 1 : 0
 
   alarm_name          = "${var.project_name}-eks-failed-requests"
   alarm_description   = "Failed API server requests on EKS cluster"

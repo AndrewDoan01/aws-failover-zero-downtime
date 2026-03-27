@@ -1,5 +1,8 @@
 provider "aws" {
-  region = var.aws_region
+  region     = var.aws_region
+  access_key = var.aws_access_key_id
+  secret_key = var.aws_secret_access_key
+  token      = var.aws_session_token
 }
 
 locals {
@@ -13,7 +16,7 @@ locals {
 }
 
 module "vpc" {
-  source = "../modules/VPC"
+  source = "./modules/VPC"
 
   name            = var.vpc_name
   cidr            = var.vpc_cidr
@@ -25,7 +28,7 @@ module "vpc" {
 }
 
 module "database" {
-  source = "../modules/database"
+  source = "./modules/database"
 
   identifier = var.db_identifier
   db_name    = var.db_name
@@ -39,7 +42,7 @@ module "database" {
 }
 
 module "eks" {
-  source = "../modules/eks"
+  source = "./modules/eks"
 
   cluster_name = var.eks_cluster_name
   vpc_id       = module.vpc.vpc_id
@@ -49,7 +52,7 @@ module "eks" {
 }
 
 module "monitoring" {
-  source = "../modules/monitoring"
+  source = "./modules/monitoring"
 
   project_name     = var.project_name
   rds_instance_id  = module.database.db_instance_id
@@ -60,7 +63,7 @@ module "monitoring" {
 
 module "route53" {
   count  = var.enable_route53 ? 1 : 0
-  source = "../modules/route53"
+  source = "./modules/route53"
 
   zone_name      = var.route53_zone_name
   private_zone   = var.route53_private_zone

@@ -17,6 +17,16 @@ variable "password" {
   description = "Master password for the database."
   type        = string
   sensitive   = true
+
+  validation {
+    condition     = length(var.password) >= 8 && length(var.password) <= 41
+    error_message = "password must be 8 to 41 characters for AWS RDS."
+  }
+
+  validation {
+    condition     = length(regexall("[/@\"[:space:]]", var.password)) == 0
+    error_message = "password must not contain '/', '@', double quotes, or spaces for AWS RDS MasterUserPassword."
+  }
 }
 
 variable "engine" {

@@ -89,6 +89,16 @@ variable "db_password" {
   description = "Database master password."
   type        = string
   sensitive   = true
+
+  validation {
+    condition     = length(var.db_password) >= 8 && length(var.db_password) <= 41
+    error_message = "db_password must be 8 to 41 characters for AWS RDS."
+  }
+
+  validation {
+    condition     = length(regexall("[/@\"[:space:]]", var.db_password)) == 0
+    error_message = "db_password must not contain '/', '@', double quotes, or spaces for AWS RDS MasterUserPassword."
+  }
 }
 
 variable "db_allowed_cidr_blocks" {

@@ -12,12 +12,26 @@ resource "aws_security_group" "db" {
   description = "Security group for RDS instance"
   vpc_id      = var.vpc_id
 
-  ingress {
-    description = "Database ingress"
-    from_port   = var.port
-    to_port     = var.port
-    protocol    = "tcp"
-    cidr_blocks = var.allowed_cidr_blocks
+  dynamic "ingress" {
+    for_each = toset(var.allowed_cidr_blocks)
+    content {
+      description = "Database ingress from CIDR ${ingress.value}"
+      from_port   = var.port
+      to_port     = var.port
+      protocol    = "tcp"
+      cidr_blocks = [ingress.value]
+    }
+  }
+
+  dynamic "ingress" {
+    for_each = toset(var.allowed_security_group_ids)
+    content {
+      description     = "Database ingress from security group ${ingress.value}"
+      from_port       = var.port
+      to_port         = var.port
+      protocol        = "tcp"
+      security_groups = [ingress.value]
+    }
   }
 
   egress {

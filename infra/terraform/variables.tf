@@ -89,6 +89,28 @@ variable "db_password" {
   description = "Database master password."
   type        = string
   sensitive   = true
+
+  validation {
+    condition     = length(var.db_password) >= 8 && length(var.db_password) <= 41
+    error_message = "db_password must be 8 to 41 characters for AWS RDS."
+  }
+
+  validation {
+    condition     = length(regexall("[/@\"[:space:]]", var.db_password)) == 0
+    error_message = "db_password must not contain '/', '@', double quotes, or spaces for AWS RDS MasterUserPassword."
+  }
+}
+
+variable "db_allowed_cidr_blocks" {
+  description = "CIDR blocks allowed to connect to the database port."
+  type        = list(string)
+  default     = ["10.0.0.0/16"]
+}
+
+variable "db_allowed_security_group_ids" {
+  description = "Security group IDs allowed to connect to the database port."
+  type        = list(string)
+  default     = []
 }
 
 variable "eks_cluster_name" {
@@ -121,8 +143,32 @@ variable "route53_record_name" {
   default     = ""
 }
 
+variable "route53_record_type" {
+  description = "DNS record type (CNAME, A, AAAA). Use A/AAAA when alias is enabled."
+  type        = string
+  default     = "CNAME"
+}
+
 variable "route53_primary_record" {
   description = "Primary DNS target."
+  type        = string
+  default     = ""
+}
+
+variable "route53_create_alias" {
+  description = "Whether to create alias records instead of standard records."
+  type        = bool
+  default     = false
+}
+
+variable "route53_primary_alias_name" {
+  description = "Primary alias DNS target name (for example, ALB DNS name)."
+  type        = string
+  default     = ""
+}
+
+variable "route53_primary_alias_zone_id" {
+  description = "Primary alias target hosted zone ID."
   type        = string
   default     = ""
 }
@@ -137,6 +183,24 @@ variable "route53_secondary_record" {
   description = "Secondary DNS target."
   type        = string
   default     = ""
+}
+
+variable "route53_secondary_alias_name" {
+  description = "Secondary alias DNS target name."
+  type        = string
+  default     = ""
+}
+
+variable "route53_secondary_alias_zone_id" {
+  description = "Secondary alias target hosted zone ID."
+  type        = string
+  default     = ""
+}
+
+variable "route53_alias_evaluate_target_health" {
+  description = "Whether Route53 evaluates alias target health."
+  type        = bool
+  default     = true
 }
 
 variable "route53_primary_weight" {

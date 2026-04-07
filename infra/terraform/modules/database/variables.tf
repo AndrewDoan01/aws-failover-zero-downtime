@@ -17,6 +17,16 @@ variable "password" {
   description = "Master password for the database."
   type        = string
   sensitive   = true
+
+  validation {
+    condition     = length(var.password) >= 8 && length(var.password) <= 41
+    error_message = "password must be 8 to 41 characters for AWS RDS."
+  }
+
+  validation {
+    condition     = length(regexall("[/@\"[:space:]]", var.password)) == 0
+    error_message = "password must not contain '/', '@', double quotes, or spaces for AWS RDS MasterUserPassword."
+  }
 }
 
 variable "engine" {
@@ -71,6 +81,12 @@ variable "allowed_cidr_blocks" {
   default     = ["10.0.0.0/16"]
 }
 
+variable "allowed_security_group_ids" {
+  description = "Security group IDs that can access the database port."
+  type        = list(string)
+  default     = []
+}
+
 variable "multi_az" {
   description = "Whether to deploy in multiple availability zones."
   type        = bool
@@ -86,7 +102,7 @@ variable "publicly_accessible" {
 variable "backup_retention_period" {
   description = "Number of days to retain backups."
   type        = number
-  default     = 7
+  default     = 3
 }
 
 variable "skip_final_snapshot" {

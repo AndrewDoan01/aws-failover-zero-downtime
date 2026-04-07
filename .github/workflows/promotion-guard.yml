@@ -1,0 +1,71 @@
+name: Promotion Guard
+
+on:
+    pull_request:
+        branches:
+            - main
+        paths:
+            - deploy/versions/staging.json
+            - deploy/versions/prod.json
+
+permissions:
+    contents: read
+
+jobs:
+    promotion-policy:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Check promotion invariants
+              shell: bash
+              run: |
+                  set -euo pipefail
+
+                  compare_env() {
+                    local from_file="$1"
+                    local to_file="$2"
+                    local label="$3"
+
+                    echo "Validating promotion ${label}"
+                    jq -e '.services | type == "array"' "${from_file}" >/dev/null
+                    jq -e '.services | type == "array"' "${to_file}" >/dev/null
+
+                    local mismatch
+                    mismatch="$(jq -r \
+                      --slurpfile from "${from_file}" \
+                      '.services[] as $svc
+                       | (($from[0].services[] | select(.name == $svc.name) | .image.digest) // "MISSING") as $fromDigest
+                       | select($fromDigest != $svc.image.digest)
+                       | "\($svc.name): from=\($fromDigest) to=\($svc.image.digest)"' \
+                      "${to_file}")"
+
+                    if [[ -n "${mismatch}" ]]; then
+                      echo "Digest mismatch detected for ${label}:"
+                      echo "${mismatch}"
+                      exit 1
+                    fi
+
+                    jq -e '.services[] | select((.release_id | length) == 0 or (.app_commit_sha | length) == 0)' "${to_file}" >/dev/null && {
+                      echo "release_id and app_commit_sha must be non-empty in ${to_file}"
+                      exit 1
+                    } || true
+
+                    echo "Promotion rule passed for ${label}"
+                  }
+
+                  BASE_REF="origin/${{ github.base_ref }}"
+                  git fetch origin "${{ github.base_ref }}"
+
+                  CHANGED="$(git diff --name-only "${BASE_REF}"...HEAD)"
+
+                  if grep -q '^deploy/versions/staging.json$' <<<"${CHANGED}"; then
+                    compare_env "deploy/versions/test.json" "deploy/versions/staging.json" "test -> staging"
+                  fi
+
+                  if grep -q '^deploy/versions/prod.json$' <<<"${CHANGED}"; then
+                    compare_env "deploy/versions/staging.json" "deploy/versions/prod.json" "staging -> prod"
+                  fi

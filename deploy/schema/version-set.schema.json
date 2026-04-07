@@ -1,0 +1,111 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://example.com/schemas/version-set.schema.json",
+    "title": "Environment Version Set",
+    "type": "object",
+    "required": [
+        "environment",
+        "services"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "environment": {
+            "type": "string",
+            "enum": [
+                "test",
+                "staging",
+                "prod"
+            ]
+        },
+        "services": {
+            "type": "array",
+            "items": {
+                "$ref": "#/$defs/service"
+            }
+        }
+    },
+    "$defs": {
+        "service": {
+            "type": "object",
+            "required": [
+                "name",
+                "release",
+                "namespace",
+                "chart",
+                "chart_version",
+                "image",
+                "release_id",
+                "app_commit_sha"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "release": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "namespace": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "chart": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "chart_version": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "values_files": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "image": {
+                    "type": "object",
+                    "required": [
+                        "repository",
+                        "digest"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "repository": {
+                            "type": "string",
+                            "pattern": "^[0-9]{12}\\.dkr\\.ecr\\.[a-z0-9-]+\\.amazonaws\\.com\\/.+"
+                        },
+                        "digest": {
+                            "type": "string",
+                            "pattern": "^sha256:[a-f0-9]{64}$"
+                        }
+                    }
+                },
+                "smoke": {
+                    "type": "object",
+                    "required": [
+                        "deployment"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "deployment": {
+                            "type": "string",
+                            "minLength": 1
+                        }
+                    }
+                },
+                "release_id": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "app_commit_sha": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{7,40}$"
+                }
+            }
+        }
+    }
+}

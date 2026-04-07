@@ -1,0 +1,226 @@
+name: Deploy Environment
+
+on:
+    push:
+        branches:
+            - main
+        paths:
+            - deploy/versions/test.json
+            - deploy/versions/staging.json
+            - deploy/versions/prod.json
+            - .github/workflows/deploy-env.yml
+            - .github/scripts/**
+    workflow_dispatch:
+        inputs:
+            environment:
+                description: Target environment
+                required: true
+                type: choice
+                options:
+                    - test
+                    - staging
+                    - prod
+
+permissions:
+    contents: read
+
+jobs:
+    detect-changes:
+        runs-on: ubuntu-latest
+        outputs:
+            test: ${{ steps.filter.outputs.test }}
+            staging: ${{ steps.filter.outputs.staging }}
+            prod: ${{ steps.filter.outputs.prod }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Detect env version changes
+              id: filter
+              uses: dorny/paths-filter@v3
+              with:
+                  filters: |
+                      test:
+                        - deploy/versions/test.json
+                      staging:
+                        - deploy/versions/staging.json
+                      prod:
+                        - deploy/versions/prod.json
+
+    deploy-test:
+        needs: detect-changes
+        runs-on: ubuntu-latest
+        if: ${{ (github.event_name == 'workflow_dispatch' && inputs.environment == 'test') || (github.event_name == 'push' && needs.detect-changes.outputs.test == 'true') }}
+        environment:
+            name: test
+        permissions:
+            id-token: write
+            contents: read
+        env:
+            ENV_NAME: test
+            AWS_REGION: ${{ vars.AWS_REGION }}
+            EKS_CLUSTER_NAME: ${{ vars.EKS_CLUSTER_NAME }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+            - name: Setup Helm
+              uses: azure/setup-helm@v4
+            - name: Setup kubectl
+              uses: azure/setup-kubectl@v4
+            - name: Configure AWS credentials (OIDC)
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+                  aws-region: ${{ env.AWS_REGION }}
+            - name: Update kubeconfig
+              shell: bash
+              run: aws eks update-kubeconfig --name "${EKS_CLUSTER_NAME}" --region "${AWS_REGION}"
+            - name: Validate version schema
+              shell: bash
+              run: ./.github/scripts/validate_versions.sh "${ENV_NAME}"
+            - name: Check ECR digests
+              shell: bash
+              run: ./.github/scripts/check_ecr_digests.sh "${ENV_NAME}"
+            - name: Render and deploy Helm
+              shell: bash
+              run: ./.github/scripts/deploy_helm.sh "${ENV_NAME}"
+            - name: Smoke test
+              id: smoke
+              shell: bash
+              continue-on-error: true
+              run: ./.github/scripts/smoke_test.sh "${ENV_NAME}"
+            - name: Auto rollback on smoke failure
+              if: steps.smoke.outcome == 'failure'
+              shell: bash
+              run: |
+                  ./.github/scripts/rollback_helm.sh "${ENV_NAME}"
+                  echo "Smoke test failed. Rolled back to previous revisions."
+                  exit 1
+
+    deploy-staging:
+        needs: detect-changes
+        runs-on: ubuntu-latest
+        if: ${{ (github.event_name == 'workflow_dispatch' && inputs.environment == 'staging') || (github.event_name == 'push' && needs.detect-changes.outputs.staging == 'true') }}
+        environment:
+            name: staging
+        permissions:
+            id-token: write
+            contents: read
+        env:
+            ENV_NAME: staging
+            AWS_REGION: ${{ vars.AWS_REGION }}
+            EKS_CLUSTER_NAME: ${{ vars.EKS_CLUSTER_NAME }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+            - name: Setup Helm
+              uses: azure/setup-helm@v4
+            - name: Setup kubectl
+              uses: azure/setup-kubectl@v4
+            - name: Configure AWS credentials (OIDC)
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+                  aws-region: ${{ env.AWS_REGION }}
+            - name: Update kubeconfig
+              shell: bash
+              run: aws eks update-kubeconfig --name "${EKS_CLUSTER_NAME}" --region "${AWS_REGION}"
+            - name: Validate version schema
+              shell: bash
+              run: ./.github/scripts/validate_versions.sh "${ENV_NAME}"
+            - name: Check ECR digests
+              shell: bash
+              run: ./.github/scripts/check_ecr_digests.sh "${ENV_NAME}"
+            - name: Render and deploy Helm
+              shell: bash
+              run: ./.github/scripts/deploy_helm.sh "${ENV_NAME}"
+            - name: Smoke test
+              id: smoke
+              shell: bash
+              continue-on-error: true
+              run: ./.github/scripts/smoke_test.sh "${ENV_NAME}"
+            - name: Auto rollback on smoke failure
+              if: steps.smoke.outcome == 'failure'
+              shell: bash
+              run: |
+                  ./.github/scripts/rollback_helm.sh "${ENV_NAME}"
+                  echo "Smoke test failed. Rolled back to previous revisions."
+                  exit 1
+
+    deploy-prod:
+        needs: detect-changes
+        runs-on: ubuntu-latest
+        if: ${{ (github.event_name == 'workflow_dispatch' && inputs.environment == 'prod') || (github.event_name == 'push' && needs.detect-changes.outputs.prod == 'true') }}
+        environment:
+            name: prod
+        permissions:
+            id-token: write
+            contents: read
+        env:
+            ENV_NAME: prod
+            AWS_REGION: ${{ vars.AWS_REGION }}
+            EKS_CLUSTER_NAME: ${{ vars.EKS_CLUSTER_NAME }}
+            PROD_CHANGE_WINDOW_START_UTC: ${{ vars.PROD_CHANGE_WINDOW_START_UTC }}
+            PROD_CHANGE_WINDOW_END_UTC: ${{ vars.PROD_CHANGE_WINDOW_END_UTC }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+            - name: Setup Helm
+              uses: azure/setup-helm@v4
+            - name: Setup kubectl
+              uses: azure/setup-kubectl@v4
+            - name: Configure AWS credentials (OIDC)
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+                  aws-region: ${{ env.AWS_REGION }}
+            - name: Validate prod change window
+              shell: bash
+              run: |
+                  START="${PROD_CHANGE_WINDOW_START_UTC:-}"
+                  END="${PROD_CHANGE_WINDOW_END_UTC:-}"
+                  if [[ -z "${START}" || -z "${END}" ]]; then
+                    echo "Prod change window variables are empty; skipping time gate"
+                    exit 0
+                  fi
+                  NOW_HOUR="$(date -u +%H)"
+                  if (( 10#${NOW_HOUR} < 10#${START} || 10#${NOW_HOUR} >= 10#${END} )); then
+                    echo "Current UTC hour ${NOW_HOUR} is outside allowed window ${START}-${END}"
+                    exit 1
+                  fi
+            - name: Update kubeconfig
+              shell: bash
+              run: aws eks update-kubeconfig --name "${EKS_CLUSTER_NAME}" --region "${AWS_REGION}"
+            - name: Validate version schema
+              shell: bash
+              run: ./.github/scripts/validate_versions.sh "${ENV_NAME}"
+            - name: Check ECR digests
+              shell: bash
+              run: ./.github/scripts/check_ecr_digests.sh "${ENV_NAME}"
+            - name: Render and deploy Helm
+              shell: bash
+              run: ./.github/scripts/deploy_helm.sh "${ENV_NAME}"
+            - name: Smoke test
+              id: smoke
+              shell: bash
+              continue-on-error: true
+              run: ./.github/scripts/smoke_test.sh "${ENV_NAME}"
+            - name: Auto rollback on smoke failure
+              if: steps.smoke.outcome == 'failure'
+              shell: bash
+              run: |
+                  ./.github/scripts/rollback_helm.sh "${ENV_NAME}"
+                  echo "Smoke test failed. Rolled back to previous revisions."
+                  exit 1

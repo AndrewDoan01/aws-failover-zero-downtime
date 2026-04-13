@@ -40,6 +40,18 @@ variable "eks_cluster_name" {
   type        = string
 }
 
+variable "create_github_oidc_provider" {
+  description = "Whether to create the GitHub Actions OIDC provider in this AWS account."
+  type        = bool
+  default     = true
+}
+
+variable "github_oidc_provider_arn" {
+  description = "Existing GitHub Actions OIDC provider ARN. Used when create_github_oidc_provider is false."
+  type        = string
+  default     = null
+}
+
 variable "tags" {
   description = "Common tags applied to IAM roles."
   type        = map(string)

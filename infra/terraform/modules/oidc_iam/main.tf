@@ -2,8 +2,22 @@ data "aws_caller_identity" "current" {}
 
 data "aws_partition" "current" {}
 
+resource "aws_iam_openid_connect_provider" "github_actions" {
+  count = var.create_github_oidc_provider ? 1 : 0
+
+  url = "https://token.actions.githubusercontent.com"
+
+  client_id_list = ["sts.amazonaws.com"]
+
+  # GitHub Actions OIDC root CA thumbprint.
+  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
+
+  tags = var.tags
+}
+
 locals {
-  oidc_provider_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/token.actions.githubusercontent.com"
+  inferred_oidc_provider_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/token.actions.githubusercontent.com"
+  oidc_provider_arn          = var.create_github_oidc_provider ? aws_iam_openid_connect_provider.github_actions[0].arn : coalesce(var.github_oidc_provider_arn, local.inferred_oidc_provider_arn)
 }
 
 data "aws_iam_policy_document" "assume_role" {

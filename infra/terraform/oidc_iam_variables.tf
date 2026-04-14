@@ -28,6 +28,18 @@ variable "oidc_deploy_environments" {
   default     = ["test", "staging", "prod"]
 }
 
+variable "create_github_oidc_provider" {
+  description = "Whether to create GitHub Actions OIDC provider in this AWS account."
+  type        = bool
+  default     = false
+}
+
+variable "github_oidc_provider_arn" {
+  description = "Existing GitHub Actions OIDC provider ARN. Used when create_github_oidc_provider is false."
+  type        = string
+  default     = null
+}
+
 variable "tf_state_bucket_name" {
   description = "Terraform state S3 bucket name referenced by deploy role policy."
   type        = string

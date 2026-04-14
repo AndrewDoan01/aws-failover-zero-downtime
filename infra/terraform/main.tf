@@ -92,14 +92,16 @@ module "oidc_iam" {
   count  = var.enable_oidc_iam_roles ? 1 : 0
   source = "./modules/oidc_iam"
 
-  github_org           = var.github_org
-  github_repo          = var.github_repo
-  role_name_prefix     = var.oidc_role_name_prefix
-  environments         = var.oidc_deploy_environments
-  tf_state_bucket_name = var.tf_state_bucket_name
-  tf_lock_table_name   = var.tf_lock_table_name
-  aws_region           = var.aws_region
-  eks_cluster_name     = var.eks_cluster_name
+  github_org                  = var.github_org
+  github_repo                 = var.github_repo
+  role_name_prefix            = var.oidc_role_name_prefix
+  environments                = var.oidc_deploy_environments
+  create_github_oidc_provider = var.create_github_oidc_provider
+  github_oidc_provider_arn    = var.github_oidc_provider_arn
+  tf_state_bucket_name        = var.tf_state_bucket_name
+  tf_lock_table_name          = var.tf_lock_table_name
+  aws_region                  = var.aws_region
+  eks_cluster_name            = var.eks_cluster_name
 
   tags = local.common_tags
 }

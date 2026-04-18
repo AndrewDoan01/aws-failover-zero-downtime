@@ -60,24 +60,6 @@ data "aws_iam_policy_document" "deploy_permissions" {
   for_each = toset(var.environments)
 
   statement {
-    sid    = "TerraformStateAccess"
-    effect = "Allow"
-    actions = [
-      "s3:GetObject",
-      "s3:PutObject",
-      "s3:ListBucket",
-      "dynamodb:GetItem",
-      "dynamodb:PutItem",
-      "dynamodb:DeleteItem"
-    ]
-    resources = [
-      "arn:${data.aws_partition.current.partition}:s3:::${var.tf_state_bucket_name}",
-      "arn:${data.aws_partition.current.partition}:s3:::${var.tf_state_bucket_name}/*",
-      "arn:${data.aws_partition.current.partition}:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/${var.tf_lock_table_name}"
-    ]
-  }
-
-  statement {
     sid    = "EksDeploy"
     effect = "Allow"
     actions = [
@@ -96,6 +78,22 @@ data "aws_iam_policy_document" "deploy_permissions" {
       "ecr:DescribeImages"
     ]
     resources = ["*"]
+  }
+
+  dynamic "statement" {
+    for_each = var.enable_secondary_eks_permissions ? [1] : []
+
+    content {
+      sid    = "EksDeploySecondary"
+      effect = "Allow"
+      actions = [
+        "eks:DescribeCluster"
+      ]
+      resources = [
+        "arn:${data.aws_partition.current.partition}:eks:${var.secondary_aws_region}:${data.aws_caller_identity.current.account_id}:cluster/${var.secondary_eks_cluster_name}",
+        "arn:${data.aws_partition.current.partition}:eks:${var.secondary_aws_region}:${data.aws_caller_identity.current.account_id}:cluster/${var.secondary_eks_cluster_name}-*"
+      ]
+    }
   }
 }
 

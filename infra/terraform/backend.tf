@@ -1,11 +1,10 @@
 terraform {
-  required_version = "1.14.8"
-
   cloud {
-    organization = "NT548_"
+
+    organization = "andrewdq"
 
     workspaces {
-      name = "NT548"
+      name = "NT114-Project"
     }
   }
 }

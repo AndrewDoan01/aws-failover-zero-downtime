@@ -1,10 +1,10 @@
-variable "aws_region" {
+variable "primary_region" {
   description = "AWS region for all resources."
   type        = string
   default     = "ap-southeast-1"
 }
 
-variable "dr_aws_region" {
+variable "secondary_region" {
   description = "Secondary AWS region used for passive DR naming and grouping."
   type        = string
   default     = "ap-northeast-1"
@@ -43,61 +43,61 @@ variable "tags" {
   default     = {}
 }
 
-variable "vpc_name" {
+variable "vpc_primary_name" {
   description = "VPC name."
   type        = string
   default     = "ha-vpc"
 }
 
-variable "vpc_cidr" {
+variable "vpc_primary_cidr" {
   description = "CIDR block for VPC."
   type        = string
   default     = "10.0.0.0/16"
 }
 
-variable "vpc_azs" {
+variable "vpc_primary_azs" {
   description = "Availability zones used by VPC."
   type        = list(string)
   default     = ["ap-southeast-1a", "ap-southeast-1b"]
 }
 
-variable "vpc_private_subnets" {
+variable "vpc_primary_private_subnets" {
   description = "Private subnets for internal workloads."
   type        = list(string)
   default     = ["10.0.1.0/24", "10.0.2.0/24"]
 }
 
-variable "vpc_public_subnets" {
+variable "vpc_primary_public_subnets" {
   description = "Public subnets for internet-facing workloads."
   type        = list(string)
   default     = ["10.0.101.0/24", "10.0.102.0/24"]
 }
 
-variable "secondary_vpc_name" {
+variable "vpc_secondary_name" {
   description = "Secondary region VPC name."
   type        = string
   default     = "secondary_vpc"
 }
 
-variable "secondary_vpc_cidr" {
+variable "vpc_secondary_cidr" {
   description = "CIDR block for secondary region VPC."
   type        = string
   default     = "10.1.0.0/16"
 }
 
-variable "secondary_vpc_azs" {
+variable "vpc_secondary_azs" {
   description = "Availability zones used by secondary VPC."
   type        = list(string)
   default     = ["ap-northeast-1a", "ap-northeast-1c"]
 }
 
-variable "secondary_vpc_private_subnets" {
+variable "vpc_secondary_private_subnets" {
   description = "Private subnets for secondary VPC workloads."
   type        = list(string)
   default     = ["10.1.1.0/24", "10.1.2.0/24"]
 }
 
-variable "secondary_vpc_public_subnets" {
+variable "vpc_secondary_public_subnets" {
   description = "Public subnets for secondary VPC internet-facing resources."
   type        = list(string)
   default     = ["10.1.101.0/24", "10.1.102.0/24"]
@@ -149,37 +149,37 @@ variable "db_allowed_security_group_ids" {
   default     = []
 }
 
-variable "eks_cluster_name" {
+variable "eks_primary_region_cluster_name" {
   description = "EKS cluster name."
   type        = string
-  default     = "ha-eks"
+  default     = "eks-ap-southeast-1"
 }
 
-variable "enable_passive_cluster" {
+variable "enable_secondary_cluster" {
   description = "Whether passive DR cluster naming and grouping are enabled."
   type        = bool
   default     = false
 }
 
-variable "passive_eks_cluster_name" {
+variable "eks_secondary_region_cluster_name" {
   description = "Passive DR EKS cluster name in secondary region."
   type        = string
-  default     = ""
+  default     = "eks-ap-northeast-1"
 }
 
-variable "passive_node_desired_size" {
+variable "eks_secondary_node_desired_size" {
   description = "Desired node count for passive secondary EKS cluster."
   type        = number
   default     = 0
 }
 
-variable "passive_node_min_size" {
+variable "eks_secondary_node_min_size" {
   description = "Minimum node count for passive secondary EKS cluster."
   type        = number
   default     = 0
 }
 
-variable "passive_node_max_size" {
+variable "eks_secondary_node_max_size" {
   description = "Maximum node count for passive secondary EKS cluster."
   type        = number
   default     = 1

@@ -1,16 +1,10 @@
 provider "aws" {
-  region     = var.aws_region
-  access_key = var.aws_access_key_id
-  secret_key = var.aws_secret_access_key
-  token      = var.aws_session_token
+  region = var.primary_region
 }
 
 provider "aws" {
-  alias      = "secondary"
-  region     = var.dr_aws_region
-  access_key = var.aws_access_key_id
-  secret_key = var.aws_secret_access_key
-  token      = var.aws_session_token
+  alias  = "secondary"
+  region = var.secondary_region
 }
 
 locals {
@@ -24,12 +18,12 @@ locals {
 
   primary_common_tags = merge(local.base_tags, {
     RegionRole = "primary"
-    Region     = var.aws_region
+    Region     = var.primary_region
   })
 
   secondary_common_tags = merge(local.base_tags, {
     RegionRole = "secondary"
-    Region     = var.dr_aws_region
+    Region     = var.secondary_region
   })
 
   primary_cluster_tags = merge(local.primary_common_tags, {
@@ -46,11 +40,11 @@ locals {
 module "primary_vpc" {
   source = "./modules/VPC"
 
-  name            = var.vpc_name
-  cidr            = var.vpc_cidr
-  azs             = var.vpc_azs
-  private_subnets = var.vpc_private_subnets
-  public_subnets  = var.vpc_public_subnets
+  name            = var.vpc_primary_name
+  cidr            = var.vpc_primary_cidr
+  azs             = var.vpc_primary_azs
+  private_subnets = var.vpc_primary_private_subnets
+  public_subnets  = var.vpc_primary_public_subnets
 
   tags = merge(local.primary_common_tags, {
     Service = "vpc"
@@ -78,7 +72,7 @@ module "primary_database" {
 module "primary_eks" {
   source = "./modules/eks"
 
-  cluster_name = var.eks_cluster_name
+  cluster_name = var.eks_primary_region_cluster_name
   vpc_id       = module.primary_vpc.vpc_id
   subnet_ids   = module.primary_vpc.private_subnet_ids
 
@@ -86,7 +80,7 @@ module "primary_eks" {
 }
 
 module "secondary_vpc" {
-  count = var.enable_passive_cluster ? 1 : 0
+  count = var.enable_secondary_cluster ? 1 : 0
 
   providers = {
     aws = aws.secondary
@@ -94,11 +88,11 @@ module "secondary_vpc" {
 
   source = "./modules/VPC"
 
-  name            = var.secondary_vpc_name
-  cidr            = var.secondary_vpc_cidr
-  azs             = var.secondary_vpc_azs
-  private_subnets = var.secondary_vpc_private_subnets
-  public_subnets  = var.secondary_vpc_public_subnets
+  name            = var.vpc_secondary_name
+  cidr            = var.vpc_secondary_cidr
+  azs             = var.vpc_secondary_azs
+  private_subnets = var.vpc_secondary_private_subnets
+  public_subnets  = var.vpc_secondary_public_subnets
 
   tags = merge(local.secondary_common_tags, {
     Service = "vpc"
@@ -106,7 +100,7 @@ module "secondary_vpc" {
 }
 
 module "secondary_eks" {
-  count = var.enable_passive_cluster ? 1 : 0
+  count = var.enable_secondary_cluster ? 1 : 0
 
   providers = {
     aws = aws.secondary
@@ -114,12 +108,12 @@ module "secondary_eks" {
 
   source = "./modules/eks"
 
-  cluster_name           = var.passive_eks_cluster_name
+  cluster_name           = var.eks_secondary_region_cluster_name
   vpc_id                 = module.secondary_vpc[0].vpc_id
   subnet_ids             = module.secondary_vpc[0].private_subnet_ids
-  node_desired_size      = var.passive_node_desired_size
-  node_min_size          = var.passive_node_min_size
-  node_max_size          = var.passive_node_max_size
+  node_desired_size      = var.eks_secondary_node_desired_size
+  node_min_size          = var.eks_secondary_node_min_size
+  node_max_size          = var.eks_secondary_node_max_size
   endpoint_public_access = true
 
   tags = local.secondary_cluster_tags
@@ -159,7 +153,7 @@ resource "aws_resourcegroups_group" "primary_eks_cluster" {
 }
 
 resource "aws_resourcegroups_group" "secondary_eks_cluster" {
-  count = var.create_cluster_resource_groups && var.enable_passive_cluster ? 1 : 0
+  count = var.create_cluster_resource_groups && var.enable_secondary_cluster ? 1 : 0
 
   provider = aws.secondary
 
@@ -220,17 +214,17 @@ module "oidc_iam" {
   count  = var.enable_oidc_iam_roles ? 1 : 0
   source = "./modules/oidc_iam"
 
-  github_org                       = var.github_org
-  github_repo                      = var.github_repo
-  role_name_prefix                 = var.oidc_role_name_prefix
-  environments                     = var.oidc_deploy_environments
-  create_github_oidc_provider      = var.create_github_oidc_provider
-  github_oidc_provider_arn         = var.github_oidc_provider_arn
-  aws_region                       = var.aws_region
-  eks_cluster_name                 = var.eks_cluster_name
-  secondary_aws_region             = var.dr_aws_region
-  secondary_eks_cluster_name       = var.passive_eks_cluster_name
-  enable_secondary_eks_permissions = var.enable_passive_cluster
+  github_org                        = var.github_org
+  github_repo                       = var.github_repo
+  role_name_prefix                  = var.oidc_role_name_prefix
+  environments                      = var.oidc_deploy_environments
+  create_github_oidc_provider       = var.create_github_oidc_provider
+  github_oidc_provider_arn          = var.github_oidc_provider_arn
+  primary_region                    = var.primary_region
+  eks_primary_region_cluster_name   = var.eks_primary_region_cluster_name
+  secondary_region                  = var.secondary_region
+  eks_secondary_region_cluster_name = var.eks_secondary_region_cluster_name
+  enable_secondary_eks_permissions  = var.enable_secondary_cluster
 
   tags = local.base_tags
 }

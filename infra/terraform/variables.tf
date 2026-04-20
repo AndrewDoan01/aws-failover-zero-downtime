@@ -4,6 +4,12 @@ variable "aws_region" {
   default     = "ap-southeast-1"
 }
 
+variable "dr_aws_region" {
+  description = "Secondary AWS region used for passive DR naming and grouping."
+  type        = string
+  default     = "ap-northeast-1"
+}
+
 variable "aws_access_key_id" {
   description = "AWS access key ID (optional, prefer environment/shared credentials when possible)."
   type        = string
@@ -67,6 +73,36 @@ variable "vpc_public_subnets" {
   default     = ["10.0.101.0/24", "10.0.102.0/24"]
 }
 
+variable "secondary_vpc_name" {
+  description = "Secondary region VPC name."
+  type        = string
+  default     = "secondary_vpc"
+}
+
+variable "secondary_vpc_cidr" {
+  description = "CIDR block for secondary region VPC."
+  type        = string
+  default     = "10.1.0.0/16"
+}
+
+variable "secondary_vpc_azs" {
+  description = "Availability zones used by secondary VPC."
+  type        = list(string)
+  default     = ["ap-northeast-1a", "ap-northeast-1c"]
+}
+
+variable "secondary_vpc_private_subnets" {
+  description = "Private subnets for secondary VPC workloads."
+  type        = list(string)
+  default     = ["10.1.1.0/24", "10.1.2.0/24"]
+}
+
+variable "secondary_vpc_public_subnets" {
+  description = "Public subnets for secondary VPC internet-facing resources."
+  type        = list(string)
+  default     = ["10.1.101.0/24", "10.1.102.0/24"]
+}
+
 variable "db_identifier" {
   description = "RDS instance identifier."
   type        = string
@@ -117,6 +153,42 @@ variable "eks_cluster_name" {
   description = "EKS cluster name."
   type        = string
   default     = "ha-eks"
+}
+
+variable "enable_passive_cluster" {
+  description = "Whether passive DR cluster naming and grouping are enabled."
+  type        = bool
+  default     = false
+}
+
+variable "passive_eks_cluster_name" {
+  description = "Passive DR EKS cluster name in secondary region."
+  type        = string
+  default     = ""
+}
+
+variable "passive_node_desired_size" {
+  description = "Desired node count for passive secondary EKS cluster."
+  type        = number
+  default     = 0
+}
+
+variable "passive_node_min_size" {
+  description = "Minimum node count for passive secondary EKS cluster."
+  type        = number
+  default     = 0
+}
+
+variable "passive_node_max_size" {
+  description = "Maximum node count for passive secondary EKS cluster."
+  type        = number
+  default     = 1
+}
+
+variable "create_cluster_resource_groups" {
+  description = "Whether to create AWS Resource Groups for cluster-centric operations."
+  type        = bool
+  default     = true
 }
 
 variable "enable_route53" {

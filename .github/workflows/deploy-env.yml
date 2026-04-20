@@ -20,6 +20,14 @@ on:
           - test
           - staging
           - prod
+      target_cluster:
+        description: Target cluster for deployment/failover
+        required: true
+        type: choice
+        default: primary
+        options:
+          - primary
+          - secondary
 
 permissions:
   contents: read
@@ -50,7 +58,9 @@ jobs:
   deploy-test:
     needs: detect-changes
     runs-on: ubuntu-latest
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.environment == 'test') || (github.event_name == 'push' && needs.detect-changes.outputs.test == 'true') }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.environment ==
+      'test') || (github.event_name == 'push' &&
+      needs.detect-changes.outputs.test == 'true') }}
     environment:
       name: test
     permissions:
@@ -58,8 +68,15 @@ jobs:
       contents: read
     env:
       ENV_NAME: test
-      AWS_REGION: ${{ vars.AWS_REGION }}
-      EKS_CLUSTER_NAME: ${{ vars.EKS_CLUSTER_NAME }}
+      DEPLOY_TARGET: ${{ github.event_name == 'workflow_dispatch' &&
+        inputs.target_cluster || 'primary' }}
+      AWS_REGION: ${{ (github.event_name == 'workflow_dispatch' &&
+        inputs.target_cluster == 'secondary') && vars['SECONDARY_AWS_REGION'] ||
+        vars['PRIMARY_AWS_REGION'] }}
+      EKS_CLUSTER_NAME: ${{ (github.event_name == 'workflow_dispatch' &&
+        inputs.target_cluster == 'secondary') &&
+        vars['SECONDARY_EKS_CLUSTER_NAME'] || vars['PRIMARY_EKS_CLUSTER_NAME']
+        }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -76,17 +93,26 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+      - name: Validate target cluster variables
+        shell: bash
+        run: |
+          if [[ -z "${AWS_REGION}" || -z "${EKS_CLUSTER_NAME}" ]]; then
+            echo "Missing target variables for DEPLOY_TARGET='${DEPLOY_TARGET}'."
+            echo "Set PRIMARY_AWS_REGION, PRIMARY_EKS_CLUSTER_NAME, SECONDARY_AWS_REGION, SECONDARY_EKS_CLUSTER_NAME in GitHub Variables."
+            exit 1
+          fi
       - name: Validate EKS cluster name variable
         shell: bash
         run: |
           if [[ ! "${EKS_CLUSTER_NAME}" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]*$ ]]; then
             echo "Invalid EKS_CLUSTER_NAME='${EKS_CLUSTER_NAME}'."
-            echo "Set GitHub Environment variable EKS_CLUSTER_NAME to a plain cluster name such as 'ha-eks-test'."
+            echo "Set PRIMARY_EKS_CLUSTER_NAME/SECONDARY_EKS_CLUSTER_NAME to plain cluster names such as 'primary_eks'."
             exit 1
           fi
       - name: Update kubeconfig
         shell: bash
-        run: aws eks update-kubeconfig --name "${EKS_CLUSTER_NAME}" --region "${AWS_REGION}"
+        run: aws eks update-kubeconfig --name "${EKS_CLUSTER_NAME}" --region
+          "${AWS_REGION}"
       - name: Validate version schema
         shell: bash
         run: ./.github/scripts/validate_versions.sh "${ENV_NAME}"
@@ -112,7 +138,9 @@ jobs:
   deploy-staging:
     needs: detect-changes
     runs-on: ubuntu-latest
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.environment == 'staging') || (github.event_name == 'push' && needs.detect-changes.outputs.staging == 'true') }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.environment ==
+      'staging') || (github.event_name == 'push' &&
+      needs.detect-changes.outputs.staging == 'true') }}
     environment:
       name: staging
     permissions:
@@ -120,8 +148,15 @@ jobs:
       contents: read
     env:
       ENV_NAME: staging
-      AWS_REGION: ${{ vars.AWS_REGION }}
-      EKS_CLUSTER_NAME: ${{ vars.EKS_CLUSTER_NAME }}
+      DEPLOY_TARGET: ${{ github.event_name == 'workflow_dispatch' &&
+        inputs.target_cluster || 'primary' }}
+      AWS_REGION: ${{ (github.event_name == 'workflow_dispatch' &&
+        inputs.target_cluster == 'secondary') && vars['SECONDARY_AWS_REGION'] ||
+        vars['PRIMARY_AWS_REGION'] }}
+      EKS_CLUSTER_NAME: ${{ (github.event_name == 'workflow_dispatch' &&
+        inputs.target_cluster == 'secondary') &&
+        vars['SECONDARY_EKS_CLUSTER_NAME'] || vars['PRIMARY_EKS_CLUSTER_NAME']
+        }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -138,17 +173,26 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+      - name: Validate target cluster variables
+        shell: bash
+        run: |
+          if [[ -z "${AWS_REGION}" || -z "${EKS_CLUSTER_NAME}" ]]; then
+            echo "Missing target variables for DEPLOY_TARGET='${DEPLOY_TARGET}'."
+            echo "Set PRIMARY_AWS_REGION, PRIMARY_EKS_CLUSTER_NAME, SECONDARY_AWS_REGION, SECONDARY_EKS_CLUSTER_NAME in GitHub Variables."
+            exit 1
+          fi
       - name: Validate EKS cluster name variable
         shell: bash
         run: |
           if [[ ! "${EKS_CLUSTER_NAME}" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]*$ ]]; then
             echo "Invalid EKS_CLUSTER_NAME='${EKS_CLUSTER_NAME}'."
-            echo "Set GitHub Environment variable EKS_CLUSTER_NAME to a plain cluster name such as 'ha-eks-staging'."
+            echo "Set PRIMARY_EKS_CLUSTER_NAME/SECONDARY_EKS_CLUSTER_NAME to plain cluster names such as 'primary_eks'."
             exit 1
           fi
       - name: Update kubeconfig
         shell: bash
-        run: aws eks update-kubeconfig --name "${EKS_CLUSTER_NAME}" --region "${AWS_REGION}"
+        run: aws eks update-kubeconfig --name "${EKS_CLUSTER_NAME}" --region
+          "${AWS_REGION}"
       - name: Validate version schema
         shell: bash
         run: ./.github/scripts/validate_versions.sh "${ENV_NAME}"
@@ -174,7 +218,9 @@ jobs:
   deploy-prod:
     needs: detect-changes
     runs-on: ubuntu-latest
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.environment == 'prod') || (github.event_name == 'push' && needs.detect-changes.outputs.prod == 'true') }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.environment ==
+      'prod') || (github.event_name == 'push' &&
+      needs.detect-changes.outputs.prod == 'true') }}
     environment:
       name: prod
     permissions:
@@ -182,8 +228,15 @@ jobs:
       contents: read
     env:
       ENV_NAME: prod
-      AWS_REGION: ${{ vars.AWS_REGION }}
-      EKS_CLUSTER_NAME: ${{ vars.EKS_CLUSTER_NAME }}
+      DEPLOY_TARGET: ${{ github.event_name == 'workflow_dispatch' &&
+        inputs.target_cluster || 'primary' }}
+      AWS_REGION: ${{ (github.event_name == 'workflow_dispatch' &&
+        inputs.target_cluster == 'secondary') && vars['SECONDARY_AWS_REGION'] ||
+        vars['PRIMARY_AWS_REGION'] }}
+      EKS_CLUSTER_NAME: ${{ (github.event_name == 'workflow_dispatch' &&
+        inputs.target_cluster == 'secondary') &&
+        vars['SECONDARY_EKS_CLUSTER_NAME'] || vars['PRIMARY_EKS_CLUSTER_NAME']
+        }}
       PROD_CHANGE_WINDOW_START_UTC: ${{ vars.PROD_CHANGE_WINDOW_START_UTC }}
       PROD_CHANGE_WINDOW_END_UTC: ${{ vars.PROD_CHANGE_WINDOW_END_UTC }}
     steps:
@@ -202,12 +255,20 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+      - name: Validate target cluster variables
+        shell: bash
+        run: |
+          if [[ -z "${AWS_REGION}" || -z "${EKS_CLUSTER_NAME}" ]]; then
+            echo "Missing target variables for DEPLOY_TARGET='${DEPLOY_TARGET}'."
+            echo "Set PRIMARY_AWS_REGION, PRIMARY_EKS_CLUSTER_NAME, SECONDARY_AWS_REGION, SECONDARY_EKS_CLUSTER_NAME in GitHub Variables."
+            exit 1
+          fi
       - name: Validate EKS cluster name variable
         shell: bash
         run: |
           if [[ ! "${EKS_CLUSTER_NAME}" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]*$ ]]; then
             echo "Invalid EKS_CLUSTER_NAME='${EKS_CLUSTER_NAME}'."
-            echo "Set GitHub Environment variable EKS_CLUSTER_NAME to a plain cluster name such as 'ha-eks-prod'."
+            echo "Set PRIMARY_EKS_CLUSTER_NAME/SECONDARY_EKS_CLUSTER_NAME to plain cluster names such as 'primary_eks'."
             exit 1
           fi
       - name: Validate prod change window
@@ -226,7 +287,8 @@ jobs:
           fi
       - name: Update kubeconfig
         shell: bash
-        run: aws eks update-kubeconfig --name "${EKS_CLUSTER_NAME}" --region "${AWS_REGION}"
+        run: aws eks update-kubeconfig --name "${EKS_CLUSTER_NAME}" --region
+          "${AWS_REGION}"
       - name: Validate version schema
         shell: bash
         run: ./.github/scripts/validate_versions.sh "${ENV_NAME}"

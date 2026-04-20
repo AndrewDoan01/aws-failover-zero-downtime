@@ -7,7 +7,7 @@ variable "enable_oidc_iam_roles" {
 variable "github_org" {
   description = "GitHub organization or user owning this repository."
   type        = string
-  default     = "your-github-org"
+  default     = "AndrewDoan01"
 }
 
 variable "github_repo" {
@@ -38,16 +38,4 @@ variable "github_oidc_provider_arn" {
   description = "Existing GitHub Actions OIDC provider ARN. Used when create_github_oidc_provider is false."
   type        = string
   default     = null
-}
-
-variable "tf_state_bucket_name" {
-  description = "Terraform state S3 bucket name referenced by deploy role policy."
-  type        = string
-  default     = "replace-me-tf-state-bucket"
-}
-
-variable "tf_lock_table_name" {
-  description = "Terraform lock DynamoDB table referenced by deploy role policy."
-  type        = string
-  default     = "replace-me-tf-lock-table"
 }

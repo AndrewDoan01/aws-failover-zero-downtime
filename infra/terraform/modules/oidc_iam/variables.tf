@@ -20,16 +20,6 @@ variable "environments" {
   default     = ["test", "staging", "prod"]
 }
 
-variable "tf_state_bucket_name" {
-  description = "S3 bucket name used for Terraform state backend."
-  type        = string
-}
-
-variable "tf_lock_table_name" {
-  description = "DynamoDB table name used for Terraform state locking."
-  type        = string
-}
-
 variable "aws_region" {
   description = "AWS region used to build regional ARNs."
   type        = string
@@ -38,6 +28,34 @@ variable "aws_region" {
 variable "eks_cluster_name" {
   description = "EKS cluster name allowed for DescribeCluster."
   type        = string
+}
+
+variable "enable_secondary_eks_permissions" {
+  description = "Whether to include DescribeCluster permission for secondary EKS cluster."
+  type        = bool
+  default     = false
+}
+
+variable "secondary_aws_region" {
+  description = "Secondary AWS region used for secondary EKS permissions."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = !var.enable_secondary_eks_permissions || (var.secondary_aws_region != null && length(trim(var.secondary_aws_region)) > 0)
+    error_message = "secondary_aws_region must be set when enable_secondary_eks_permissions is true."
+  }
+}
+
+variable "secondary_eks_cluster_name" {
+  description = "Secondary EKS cluster name allowed for DescribeCluster when enabled."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = !var.enable_secondary_eks_permissions || (var.secondary_eks_cluster_name != null && length(trim(var.secondary_eks_cluster_name)) > 0)
+    error_message = "secondary_eks_cluster_name must be set when enable_secondary_eks_permissions is true."
+  }
 }
 
 variable "create_github_oidc_provider" {

@@ -1,15 +1,6 @@
-name: Deploy Environment
+name: Upsert Version Set
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - deploy/versions/test.json
-      - deploy/versions/staging.json
-      - deploy/versions/prod.json
-      - .github/workflows/deploy-env.yml
-      - .github/scripts/**
   workflow_dispatch:
     inputs:
       environment:
@@ -20,293 +11,186 @@ on:
           - test
           - staging
           - prod
-      target_cluster:
-        description: Target cluster for deployment/failover
+
+      service_name:
+        description: Service name
         required: true
-        type: choice
-        default: primary
-        options:
-          - primary
-          - secondary
+        type: string
+
+      release:
+        description: Helm release name
+        required: true
+        type: string
+
+      namespace:
+        description: Kubernetes namespace
+        required: true
+        type: string
+
+      chart:
+        description: Helm chart reference
+        required: true
+        type: string
+
+      chart_version:
+        description: Helm chart version
+        required: true
+        type: string
+
+      image_repository:
+        description: Full ECR repository URI (e.g. 123456789.dkr.ecr.us-east-1.amazonaws.com/my-app)
+        required: true
+        type: string
+
+      image_digest:
+        description: "Immutable image digest — must start with sha256:"
+        required: true
+        type: string
+
+      release_id:
+        description: Release identifier from app pipeline
+        required: true
+        type: string
+
+      app_commit_sha:
+        description: App commit SHA
+        required: true
+        type: string
+
+      smoke_deployment:
+        description: Optional smoke deployment name
+        required: false
+        type: string
+        
+      values_files:
+        description: "Optional values files — comma-separated or JSON array: file1.yaml,file2.yaml"
+        required: false
+        type: string
+
+  repository_dispatch:
+    types:
+      - upsert-version-set
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
 
 jobs:
-  detect-changes:
+  upsert:
     runs-on: ubuntu-latest
-    outputs:
-      test: ${{ steps.filter.outputs.test }}
-      staging: ${{ steps.filter.outputs.staging }}
-      prod: ${{ steps.filter.outputs.prod }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Detect env version changes
-        id: filter
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            test:
-              - deploy/versions/test.json
-            staging:
-              - deploy/versions/staging.json
-            prod:
-              - deploy/versions/prod.json
-
-  deploy-test:
-    needs: detect-changes
-    runs-on: ubuntu-latest
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.environment ==
-      'test') || (github.event_name == 'push' &&
-      needs.detect-changes.outputs.test == 'true') }}
-    environment:
-      name: test
-    permissions:
-      id-token: write
-      contents: read
     env:
-      ENV_NAME: test
-      DEPLOY_TARGET: ${{ github.event_name == 'workflow_dispatch' &&
-        inputs.target_cluster || 'primary' }}
-      AWS_REGION: ${{ (github.event_name == 'workflow_dispatch' &&
-        inputs.target_cluster == 'secondary') && vars['SECONDARY_AWS_REGION'] ||
-        vars['PRIMARY_AWS_REGION'] }}
-      EKS_CLUSTER_NAME: ${{ (github.event_name == 'workflow_dispatch' &&
-        inputs.target_cluster == 'secondary') &&
-        vars['SECONDARY_EKS_CLUSTER_NAME'] || vars['PRIMARY_EKS_CLUSTER_NAME']
-        }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Setup Helm
-        uses: azure/setup-helm@v4
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v4
-      - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-      - name: Validate target cluster variables
-        shell: bash
-        run: |
-          if [[ -z "${AWS_REGION}" || -z "${EKS_CLUSTER_NAME}" ]]; then
-            echo "Missing target variables for DEPLOY_TARGET='${DEPLOY_TARGET}'."
-            echo "Set PRIMARY_AWS_REGION, PRIMARY_EKS_CLUSTER_NAME, SECONDARY_AWS_REGION, SECONDARY_EKS_CLUSTER_NAME in GitHub Variables."
-            exit 1
-          fi
-      - name: Validate EKS cluster name variable
-        shell: bash
-        run: |
-          if [[ ! "${EKS_CLUSTER_NAME}" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]*$ ]]; then
-            echo "Invalid EKS_CLUSTER_NAME='${EKS_CLUSTER_NAME}'."
-            echo "Set PRIMARY_EKS_CLUSTER_NAME/SECONDARY_EKS_CLUSTER_NAME to plain cluster names such as 'primary_eks'."
-            exit 1
-          fi
-      - name: Update kubeconfig
-        shell: bash
-        run: aws eks update-kubeconfig --name "${EKS_CLUSTER_NAME}" --region
-          "${AWS_REGION}"
-      - name: Validate version schema
-        shell: bash
-        run: ./.github/scripts/validate_versions.sh "${ENV_NAME}"
-      - name: Check ECR digests
-        shell: bash
-        run: ./.github/scripts/check_ecr_digests.sh "${ENV_NAME}"
-      - name: Render and deploy Helm
-        shell: bash
-        run: ./.github/scripts/deploy_helm.sh "${ENV_NAME}"
-      - name: Smoke test
-        id: smoke
-        shell: bash
-        continue-on-error: true
-        run: ./.github/scripts/smoke_test.sh "${ENV_NAME}"
-      - name: Auto rollback on smoke failure
-        if: steps.smoke.outcome == 'failure'
-        shell: bash
-        run: |
-          ./.github/scripts/rollback_helm.sh "${ENV_NAME}"
-          echo "Smoke test failed. Rolled back to previous revisions."
-          exit 1
+      TARGET_ENV:       ${{ github.event.client_payload.environment    || inputs.environment }}
+      SERVICE_NAME:     ${{ github.event.client_payload.service_name   || inputs.service_name }}
+      RELEASE:          ${{ github.event.client_payload.release        || inputs.release }}
+      NAMESPACE:        ${{ github.event.client_payload.namespace      || inputs.namespace }}
+      CHART:            ${{ github.event.client_payload.chart          || inputs.chart }}
+      CHART_VERSION:    ${{ github.event.client_payload.chart_version  || inputs.chart_version }}
+      IMAGE_REPOSITORY: ${{ github.event.client_payload.image_repository || inputs.image_repository }}
+      IMAGE_DIGEST:     ${{ github.event.client_payload.image_digest   || inputs.image_digest }}
+      RELEASE_ID:       ${{ github.event.client_payload.release_id     || inputs.release_id }}
+      APP_COMMIT_SHA:   ${{ github.event.client_payload.app_commit_sha || inputs.app_commit_sha }}
+      SMOKE_DEPLOYMENT: ${{ github.event.client_payload.smoke_deployment || inputs.smoke_deployment }}
+      VALUES_FILES:     ${{ github.event.client_payload.values_files   || inputs.values_files }}
 
-  deploy-staging:
-    needs: detect-changes
-    runs-on: ubuntu-latest
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.environment ==
-      'staging') || (github.event_name == 'push' &&
-      needs.detect-changes.outputs.staging == 'true') }}
-    environment:
-      name: staging
-    permissions:
-      id-token: write
-      contents: read
-    env:
-      ENV_NAME: staging
-      DEPLOY_TARGET: ${{ github.event_name == 'workflow_dispatch' &&
-        inputs.target_cluster || 'primary' }}
-      AWS_REGION: ${{ (github.event_name == 'workflow_dispatch' &&
-        inputs.target_cluster == 'secondary') && vars['SECONDARY_AWS_REGION'] ||
-        vars['PRIMARY_AWS_REGION'] }}
-      EKS_CLUSTER_NAME: ${{ (github.event_name == 'workflow_dispatch' &&
-        inputs.target_cluster == 'secondary') &&
-        vars['SECONDARY_EKS_CLUSTER_NAME'] || vars['PRIMARY_EKS_CLUSTER_NAME']
-        }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Setup Helm
-        uses: azure/setup-helm@v4
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v4
-      - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-      - name: Validate target cluster variables
-        shell: bash
-        run: |
-          if [[ -z "${AWS_REGION}" || -z "${EKS_CLUSTER_NAME}" ]]; then
-            echo "Missing target variables for DEPLOY_TARGET='${DEPLOY_TARGET}'."
-            echo "Set PRIMARY_AWS_REGION, PRIMARY_EKS_CLUSTER_NAME, SECONDARY_AWS_REGION, SECONDARY_EKS_CLUSTER_NAME in GitHub Variables."
-            exit 1
-          fi
-      - name: Validate EKS cluster name variable
-        shell: bash
-        run: |
-          if [[ ! "${EKS_CLUSTER_NAME}" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]*$ ]]; then
-            echo "Invalid EKS_CLUSTER_NAME='${EKS_CLUSTER_NAME}'."
-            echo "Set PRIMARY_EKS_CLUSTER_NAME/SECONDARY_EKS_CLUSTER_NAME to plain cluster names such as 'primary_eks'."
-            exit 1
-          fi
-      - name: Update kubeconfig
-        shell: bash
-        run: aws eks update-kubeconfig --name "${EKS_CLUSTER_NAME}" --region
-          "${AWS_REGION}"
-      - name: Validate version schema
-        shell: bash
-        run: ./.github/scripts/validate_versions.sh "${ENV_NAME}"
-      - name: Check ECR digests
-        shell: bash
-        run: ./.github/scripts/check_ecr_digests.sh "${ENV_NAME}"
-      - name: Render and deploy Helm
-        shell: bash
-        run: ./.github/scripts/deploy_helm.sh "${ENV_NAME}"
-      - name: Smoke test
-        id: smoke
-        shell: bash
-        continue-on-error: true
-        run: ./.github/scripts/smoke_test.sh "${ENV_NAME}"
-      - name: Auto rollback on smoke failure
-        if: steps.smoke.outcome == 'failure'
-        shell: bash
-        run: |
-          ./.github/scripts/rollback_helm.sh "${ENV_NAME}"
-          echo "Smoke test failed. Rolled back to previous revisions."
-          exit 1
 
-  deploy-prod:
-    needs: detect-changes
-    runs-on: ubuntu-latest
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.environment ==
-      'prod') || (github.event_name == 'push' &&
-      needs.detect-changes.outputs.prod == 'true') }}
-    environment:
-      name: prod
-    permissions:
-      id-token: write
-      contents: read
-    env:
-      ENV_NAME: prod
-      DEPLOY_TARGET: ${{ github.event_name == 'workflow_dispatch' &&
-        inputs.target_cluster || 'primary' }}
-      AWS_REGION: ${{ (github.event_name == 'workflow_dispatch' &&
-        inputs.target_cluster == 'secondary') && vars['SECONDARY_AWS_REGION'] ||
-        vars['PRIMARY_AWS_REGION'] }}
-      EKS_CLUSTER_NAME: ${{ (github.event_name == 'workflow_dispatch' &&
-        inputs.target_cluster == 'secondary') &&
-        vars['SECONDARY_EKS_CLUSTER_NAME'] || vars['PRIMARY_EKS_CLUSTER_NAME']
-        }}
-      PROD_CHANGE_WINDOW_START_UTC: ${{ vars.PROD_CHANGE_WINDOW_START_UTC }}
-      PROD_CHANGE_WINDOW_END_UTC: ${{ vars.PROD_CHANGE_WINDOW_END_UTC }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Validate required payload fields
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            TARGET_ENV SERVICE_NAME RELEASE NAMESPACE
+            CHART CHART_VERSION IMAGE_REPOSITORY IMAGE_DIGEST
+            RELEASE_ID APP_COMMIT_SHA
+          )
+          for var_name in "${required[@]}"; do
+            value="${!var_name}"
+            value="${value:-}"
+            if [[ -z "${value}" ]]; then
+              echo "::error::Missing required field: ${var_name}"
+              exit 1
+            fi
+          done
+          if [[ ! "${IMAGE_DIGEST}" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            echo "::error::IMAGE_DIGEST must be in format sha256:<64 hex chars>, got: '${IMAGE_DIGEST}'"
+            exit 1
+          fi
+
+      - name: Normalize values_files
+        id: normalize
+        shell: bash
+        run: |
+          set -euo pipefail
+          raw="${VALUES_FILES:-}"
+          if [[ -z "${raw}" ]]; then
+            normalized="[]"
+          elif [[ "${raw}" == \[* ]]; then
+            normalized="$(echo "${raw}" | python3 -c "import sys,json; json.load(sys.stdin); print(sys.stdin.read())" 2>/dev/null || {
+              echo "::error::VALUES_FILES looks like JSON but failed to parse: ${raw}"
+              exit 1
+            })"
+            normalized="${raw}"
+          else
+            normalized="$(python3 -c "
+          import sys, json
+          raw = sys.argv[1]
+          items = [f.strip() for f in raw.split(',') if f.strip()]
+          print(json.dumps(items))
+          " "${raw}")"
+          fi
+
+          echo "values_files_json=${normalized}" >> "${GITHUB_OUTPUT}"
+
+      - name: Upsert version record
+        shell: bash
+        run: |
+          python3 .github/scripts/upsert_version_set.py \
+            --environment      "${TARGET_ENV}" \
+            --service-name     "${SERVICE_NAME}" \
+            --release          "${RELEASE}" \
+            --namespace        "${NAMESPACE}" \
+            --chart            "${CHART}" \
+            --chart-version    "${CHART_VERSION}" \
+            --image-repository "${IMAGE_REPOSITORY}" \
+            --image-digest     "${IMAGE_DIGEST}" \
+            --release-id       "${RELEASE_ID}" \
+            --app-commit-sha   "${APP_COMMIT_SHA}" \
+            --smoke-deployment "${SMOKE_DEPLOYMENT:-}" \
+            --values-files     '${{ steps.normalize.outputs.values_files_json }}'
+
+      - name: Validate schema
+        shell: bash
+        run: ./.github/scripts/validate_versions.sh "${TARGET_ENV}"
+
+      - name: Build branch metadata
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          service_slug="$(echo "${SERVICE_NAME}" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9-' '-')"
+          echo "branch=automation/version-${TARGET_ENV}-${service_slug}-${GITHUB_RUN_ID}" >> "${GITHUB_OUTPUT}"
+          echo "title=chore(deploy): upsert ${TARGET_ENV} version for ${SERVICE_NAME}" >> "${GITHUB_OUTPUT}"
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v7
         with:
-          node-version: "22"
-      - name: Setup Helm
-        uses: azure/setup-helm@v4
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v4
-      - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-      - name: Validate target cluster variables
-        shell: bash
-        run: |
-          if [[ -z "${AWS_REGION}" || -z "${EKS_CLUSTER_NAME}" ]]; then
-            echo "Missing target variables for DEPLOY_TARGET='${DEPLOY_TARGET}'."
-            echo "Set PRIMARY_AWS_REGION, PRIMARY_EKS_CLUSTER_NAME, SECONDARY_AWS_REGION, SECONDARY_EKS_CLUSTER_NAME in GitHub Variables."
-            exit 1
-          fi
-      - name: Validate EKS cluster name variable
-        shell: bash
-        run: |
-          if [[ ! "${EKS_CLUSTER_NAME}" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]*$ ]]; then
-            echo "Invalid EKS_CLUSTER_NAME='${EKS_CLUSTER_NAME}'."
-            echo "Set PRIMARY_EKS_CLUSTER_NAME/SECONDARY_EKS_CLUSTER_NAME to plain cluster names such as 'primary_eks'."
-            exit 1
-          fi
-      - name: Validate prod change window
-        shell: bash
-        run: |
-          START="${PROD_CHANGE_WINDOW_START_UTC:-}"
-          END="${PROD_CHANGE_WINDOW_END_UTC:-}"
-          if [[ -z "${START}" || -z "${END}" ]]; then
-            echo "Prod change window variables are empty; skipping time gate"
-            exit 0
-          fi
-          NOW_HOUR="$(date -u +%H)"
-          if (( 10#${NOW_HOUR} < 10#${START} || 10#${NOW_HOUR} >= 10#${END} )); then
-            echo "Current UTC hour ${NOW_HOUR} is outside allowed window ${START}-${END}"
-            exit 1
-          fi
-      - name: Update kubeconfig
-        shell: bash
-        run: aws eks update-kubeconfig --name "${EKS_CLUSTER_NAME}" --region
-          "${AWS_REGION}"
-      - name: Validate version schema
-        shell: bash
-        run: ./.github/scripts/validate_versions.sh "${ENV_NAME}"
-      - name: Check ECR digests
-        shell: bash
-        run: ./.github/scripts/check_ecr_digests.sh "${ENV_NAME}"
-      - name: Render and deploy Helm
-        shell: bash
-        run: ./.github/scripts/deploy_helm.sh "${ENV_NAME}"
-      - name: Smoke test
-        id: smoke
-        shell: bash
-        continue-on-error: true
-        run: ./.github/scripts/smoke_test.sh "${ENV_NAME}"
-      - name: Auto rollback on smoke failure
-        if: steps.smoke.outcome == 'failure'
-        shell: bash
-        run: |
-          ./.github/scripts/rollback_helm.sh "${ENV_NAME}"
-          echo "Smoke test failed. Rolled back to previous revisions."
-          exit 1
+
+          commit-message: "chore(deploy): upsert ${{ env.TARGET_ENV }} version for ${{ env.SERVICE_NAME }}"
+          branch: ${{ steps.meta.outputs.branch }}
+          title: ${{ steps.meta.outputs.title }}
+          body: |
+            Automated version-set update.
+
+            - environment: `${{ env.TARGET_ENV }}`
+            - service: `${{ env.SERVICE_NAME }}`
+            - release_id: `${{ env.RELEASE_ID }}`
+            - app_commit_sha: `${{ env.APP_COMMIT_SHA }}`
+            - image_repository: `${{ env.IMAGE_REPOSITORY }}`
+            - image_digest: `${{ env.IMAGE_DIGEST }}`
+          labels: |
+            automation
+            deployment
+          add-paths: |
+            deploy/versions/${{ env.TARGET_ENV }}.json

@@ -42,7 +42,7 @@ variable "secondary_region" {
   default     = null
 
   validation {
-    condition     = !var.enable_secondary_eks_permissions || (var.secondary_region != null && length(trim(var.secondary_region)) > 0)
+    condition     = !var.enable_secondary_eks_permissions || (var.secondary_region != null && length(trimspace(var.secondary_region)) > 0)
     error_message = "secondary_region must be set when enable_secondary_eks_permissions is true."
   }
 }
@@ -53,7 +53,7 @@ variable "eks_secondary_region_cluster_name" {
   default     = null
 
   validation {
-    condition     = !var.enable_secondary_eks_permissions || (var.eks_secondary_region_cluster_name != null && length(trim(var.eks_secondary_region_cluster_name)) > 0)
+    condition     = !var.enable_secondary_eks_permissions || (var.eks_secondary_region_cluster_name != null && length(trimspace(var.eks_secondary_region_cluster_name)) > 0)
     error_message = "eks_secondary_region_cluster_name must be set when enable_secondary_eks_permissions is true."
   }
 }

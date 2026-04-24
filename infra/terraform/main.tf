@@ -51,13 +51,19 @@ module "primary_vpc" {
   })
 }
 
+data "aws_iam_openid_connect_provider" "github" {
+  url = "https://token.actions.githubusercontent.com"
+
+  tags = var.tags
+}
+
 module "primary_database" {
   source = "./modules/database"
 
-  identifier = var.db_identifier
-  db_name    = var.db_name
-  username   = var.db_username
-  password   = var.db_password
+  identifier  = var.db_identifier
+  db_name     = var.db_name
+  username    = var.db_username
+  db_password = var.db_password
 
   vpc_id                     = module.primary_vpc.vpc_id
   subnet_ids                 = module.primary_vpc.private_subnet_ids
@@ -227,4 +233,36 @@ module "oidc_iam" {
   enable_secondary_eks_permissions  = var.enable_secondary_cluster
 
   tags = local.base_tags
+}
+
+
+# resource "aws_ecr_repository" "retail_app" {
+
+#  name = "aws-retail-store-sample-app"
+#  image_tag_mutability = "IMMUTABLE"
+
+#  image_scanning_configuration {
+#    scan_on_push = true
+# }
+#
+# tags = {
+#    Project = "retail-store"
+#    Managed = "terraform"
+#  }
+# }
+
+module "github_ecr_role" {
+
+  source = "./modules/oidc_ecr_role"
+
+
+  github_org  = "AndrewDoan01"
+  github_repo = ""
+
+  environment = "dev"
+
+  role_name = "github-actions-ecr-dev"
+
+  repository_arns = ["arn:aws:ecr:ap-southeast-1:123456789012:repository/todo-nodejs"]
+
 }

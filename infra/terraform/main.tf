@@ -236,20 +236,22 @@ module "oidc_iam" {
 }
 
 
-# resource "aws_ecr_repository" "retail_app" {
+module "ecr" {
+  source = "./modules/ECR"
 
-#  name = "aws-retail-store-sample-app"
-#  image_tag_mutability = "IMMUTABLE"
+  repositories = [
+    {
+      name                 = "todo-nodejs"
+      image_tag_mutability = "IMMUTABLE"
+      scan_on_push         = true
+      tags = merge(local.base_tags, {
+        Service = "ecr"
+      })
+    }
+  ]
 
-#  image_scanning_configuration {
-#    scan_on_push = true
-# }
-#
-# tags = {
-#    Project = "retail-store"
-#    Managed = "terraform"
-#  }
-# }
+  tags = local.base_tags
+}
 
 module "github_ecr_role" {
 

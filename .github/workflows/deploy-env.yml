@@ -58,9 +58,7 @@ jobs:
   deploy-test:
     needs: detect-changes
     runs-on: ubuntu-latest
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.environment ==
-      'test') || (github.event_name == 'push' &&
-      needs.detect-changes.outputs.test == 'true') }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.environment == 'test') || (github.event_name == 'push' && needs.detect-changes.outputs.test == 'true') }}
     environment:
       name: test
     permissions:
@@ -73,10 +71,7 @@ jobs:
       AWS_REGION: ${{ (github.event_name == 'workflow_dispatch' &&
         inputs.target_cluster == 'secondary') && vars['SECONDARY_AWS_REGION'] ||
         vars['PRIMARY_AWS_REGION'] }}
-      EKS_CLUSTER_NAME: ${{ (github.event_name == 'workflow_dispatch' &&
-        inputs.target_cluster == 'secondary') &&
-        vars['SECONDARY_EKS_CLUSTER_NAME'] || vars['PRIMARY_EKS_CLUSTER_NAME']
-        }}
+      EKS_CLUSTER_NAME: ${{ (github.event_name == 'workflow_dispatch' && inputs.target_cluster == 'secondary') && vars['SECONDARY_EKS_CLUSTER_NAME'] || vars['PRIMARY_EKS_CLUSTER_NAME'] }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -138,9 +133,7 @@ jobs:
   deploy-staging:
     needs: detect-changes
     runs-on: ubuntu-latest
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.environment ==
-      'staging') || (github.event_name == 'push' &&
-      needs.detect-changes.outputs.staging == 'true') }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.environment == 'staging') || (github.event_name == 'push' && needs.detect-changes.outputs.staging == 'true') }}
     environment:
       name: staging
     permissions:
@@ -153,10 +146,7 @@ jobs:
       AWS_REGION: ${{ (github.event_name == 'workflow_dispatch' &&
         inputs.target_cluster == 'secondary') && vars['SECONDARY_AWS_REGION'] ||
         vars['PRIMARY_AWS_REGION'] }}
-      EKS_CLUSTER_NAME: ${{ (github.event_name == 'workflow_dispatch' &&
-        inputs.target_cluster == 'secondary') &&
-        vars['SECONDARY_EKS_CLUSTER_NAME'] || vars['PRIMARY_EKS_CLUSTER_NAME']
-        }}
+      EKS_CLUSTER_NAME: ${{ (github.event_name == 'workflow_dispatch' && inputs.target_cluster == 'secondary') && vars['SECONDARY_EKS_CLUSTER_NAME'] || vars['PRIMARY_EKS_CLUSTER_NAME'] }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -218,9 +208,7 @@ jobs:
   deploy-prod:
     needs: detect-changes
     runs-on: ubuntu-latest
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.environment ==
-      'prod') || (github.event_name == 'push' &&
-      needs.detect-changes.outputs.prod == 'true') }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.environment == 'prod') || (github.event_name == 'push' && needs.detect-changes.outputs.prod == 'true') }}
     environment:
       name: prod
     permissions:
@@ -233,10 +221,7 @@ jobs:
       AWS_REGION: ${{ (github.event_name == 'workflow_dispatch' &&
         inputs.target_cluster == 'secondary') && vars['SECONDARY_AWS_REGION'] ||
         vars['PRIMARY_AWS_REGION'] }}
-      EKS_CLUSTER_NAME: ${{ (github.event_name == 'workflow_dispatch' &&
-        inputs.target_cluster == 'secondary') &&
-        vars['SECONDARY_EKS_CLUSTER_NAME'] || vars['PRIMARY_EKS_CLUSTER_NAME']
-        }}
+      EKS_CLUSTER_NAME: ${{ (github.event_name == 'workflow_dispatch' && inputs.target_cluster == 'secondary') && vars['SECONDARY_EKS_CLUSTER_NAME'] || vars['PRIMARY_EKS_CLUSTER_NAME']}}
       PROD_CHANGE_WINDOW_START_UTC: ${{ vars.PROD_CHANGE_WINDOW_START_UTC }}
       PROD_CHANGE_WINDOW_END_UTC: ${{ vars.PROD_CHANGE_WINDOW_END_UTC }}
     steps:

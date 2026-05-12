@@ -25,6 +25,17 @@ variable "record_type" {
   }
 }
 
+variable "routing_policy" {
+  description = "Route53 routing policy to use for the record set."
+  type        = string
+  default     = "FAILOVER"
+
+  validation {
+    condition     = contains(["FAILOVER", "WEIGHTED"], upper(var.routing_policy)) && (upper(var.routing_policy) != "FAILOVER" || var.create_secondary_record)
+    error_message = "routing_policy must be one of: FAILOVER, WEIGHTED, and FAILOVER requires create_secondary_record to be true."
+  }
+}
+
 variable "ttl" {
   description = "TTL for the DNS records in seconds."
   type        = number
@@ -100,4 +111,69 @@ variable "secondary_weight" {
   description = "Weight for secondary record."
   type        = number
   default     = 0
+}
+
+variable "primary_health_check_enabled" {
+  description = "Whether to create a Route53 health check for the primary target."
+  type        = bool
+  default     = true
+}
+
+variable "primary_health_check_fqdn" {
+  description = "Primary health check target FQDN. Falls back to the primary alias or record target when empty."
+  type        = string
+  default     = ""
+}
+
+variable "primary_health_check_port" {
+  description = "Primary health check port."
+  type        = number
+  default     = 443
+}
+
+variable "primary_health_check_type" {
+  description = "Primary health check protocol."
+  type        = string
+  default     = "HTTPS"
+
+  validation {
+    condition     = contains(["HTTP", "HTTPS"], upper(var.primary_health_check_type))
+    error_message = "primary_health_check_type must be HTTP or HTTPS."
+  }
+}
+
+variable "primary_health_check_resource_path" {
+  description = "HTTP path used by the primary health check."
+  type        = string
+  default     = "/health"
+}
+
+variable "primary_health_check_failure_threshold" {
+  description = "Number of failed checks before Route53 marks the primary target unhealthy."
+  type        = number
+  default     = 3
+}
+
+variable "primary_health_check_request_interval" {
+  description = "Interval in seconds between Route53 health check requests."
+  type        = number
+  default     = 30
+}
+
+variable "primary_health_check_enable_sni" {
+  description = "Whether to enable SNI for HTTPS health checks."
+  type        = bool
+  default     = true
+}
+
+variable "primary_health_check_search_string" {
+  description = "Optional string Route53 should look for in the health check response body."
+  type        = string
+  default     = ""
+}
+
+variable "primary_health_check_regions" {
+  description = "Optional Route53 health check regions. Leave empty for the default managed regions."
+  type        = list(string)
+  default     = []
 }

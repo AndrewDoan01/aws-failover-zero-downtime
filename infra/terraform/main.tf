@@ -85,6 +85,92 @@ module "primary_eks" {
   tags = local.primary_cluster_tags
 }
 
+# Security group for primary ALB
+resource "aws_security_group" "primary_alb" {
+  name        = "${var.project_name}-primary-alb-sg"
+  description = "Security group for primary ALB"
+  vpc_id      = module.primary_vpc.vpc_id
+
+  ingress {
+    description = "HTTP from anywhere"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "HTTPS from anywhere"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "Allow all outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(local.primary_common_tags, {
+    Name = "${var.project_name}-primary-alb-sg"
+  })
+}
+
+# Primary ALB
+resource "aws_lb" "primary" {
+  name               = "${var.project_name}-primary-alb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.primary_alb.id]
+  subnets            = module.primary_vpc.public_subnet_ids
+
+  enable_deletion_protection       = false
+  enable_http2                     = true
+  enable_cross_zone_load_balancing = true
+
+  tags = merge(local.primary_common_tags, {
+    Name = "${var.project_name}-primary-alb"
+  })
+}
+
+# Target group for primary ALB (pointing to EKS nodes)
+resource "aws_lb_target_group" "primary" {
+  name        = "${var.project_name}-primary-tg"
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = module.primary_vpc.vpc_id
+  target_type = "ip"
+
+  health_check {
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    timeout             = 3
+    interval            = 30
+    path                = "/"
+    matcher             = "200-399"
+  }
+
+  tags = merge(local.primary_common_tags, {
+    Name = "${var.project_name}-primary-tg"
+  })
+}
+
+# Listener for primary ALB
+resource "aws_lb_listener" "primary_http" {
+  load_balancer_arn = aws_lb.primary.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.primary.arn
+  }
+}
+
 module "secondary_vpc" {
   count = var.enable_secondary_cluster ? 1 : 0
 
@@ -123,6 +209,124 @@ module "secondary_eks" {
   endpoint_public_access = true
 
   tags = local.secondary_cluster_tags
+}
+
+module "secondary_database" {
+  count = var.enable_secondary_cluster ? 1 : 0
+
+  providers = {
+    aws = aws.secondary
+  }
+
+  source = "./modules/database"
+
+  identifier         = "${var.db_identifier}-secondary"
+  vpc_id             = module.secondary_vpc[0].vpc_id
+  subnet_ids         = module.secondary_vpc[0].private_subnet_ids
+  replicate_source_db = module.primary_database.db_instance_arn
+
+  tags = merge(local.secondary_common_tags, {
+    Service      = "database"
+    DatabaseRole = "read-replica"
+  })
+}
+
+# Security group for secondary ALB
+resource "aws_security_group" "secondary_alb" {
+  count = var.enable_secondary_cluster ? 1 : 0
+
+  provider    = aws.secondary
+  name        = "${var.project_name}-secondary-alb-sg"
+  description = "Security group for secondary ALB"
+  vpc_id      = module.secondary_vpc[0].vpc_id
+
+  ingress {
+    description = "HTTP from anywhere"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "HTTP from anywhere"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "Allow all outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(local.secondary_common_tags, {
+    Name = "${var.project_name}-secondary-alb-sg"
+  })
+}
+
+# Secondary ALB
+resource "aws_lb" "secondary" {
+  count = var.enable_secondary_cluster ? 1 : 0
+
+  provider           = aws.secondary
+  name               = "${var.project_name}-secondary-alb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.secondary_alb[0].id]
+  subnets            = module.secondary_vpc[0].public_subnet_ids
+
+  enable_deletion_protection       = false
+  enable_http2                     = true
+  enable_cross_zone_load_balancing = true
+
+  tags = merge(local.secondary_common_tags, {
+    Name = "${var.project_name}-secondary-alb"
+  })
+}
+
+# Target group for secondary ALB
+resource "aws_lb_target_group" "secondary" {
+  count = var.enable_secondary_cluster ? 1 : 0
+
+  provider    = aws.secondary
+  name        = "${var.project_name}-secondary-tg"
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = module.secondary_vpc[0].vpc_id
+  target_type = "ip"
+
+  health_check {
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    timeout             = 3
+    interval            = 30
+    path                = "/"
+    matcher             = "200-399"
+  }
+
+  tags = merge(local.secondary_common_tags, {
+    Name = "${var.project_name}-secondary-tg"
+  })
+}
+
+# Listener for secondary ALB
+resource "aws_lb_listener" "secondary_http" {
+  count = var.enable_secondary_cluster ? 1 : 0
+
+  provider          = aws.secondary
+  load_balancer_arn = aws_lb.secondary[0].arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.secondary[0].arn
+  }
 }
 
 resource "aws_resourcegroups_group" "primary_eks_cluster" {
@@ -193,6 +397,22 @@ resource "aws_resourcegroups_group" "secondary_eks_cluster" {
   tags = local.secondary_cluster_tags
 }
 
+module "monitoring" {
+  count  = var.enable_monitoring ? 1 : 0
+  source = "./modules/monitoring"
+
+  project_name     = var.project_name
+  alarm_topic_name = var.monitoring_alarm_topic_name
+  rds_instance_id  = module.primary_database.db_instance_id
+  eks_cluster_name = module.primary_eks.cluster_name
+
+  prometheus_workspace_alias   = var.monitoring_prometheus_workspace_alias
+  prometheus_logging_group_arn = var.monitoring_prometheus_logging_group_arn
+  grafana_description          = var.monitoring_grafana_description
+
+  tags = local.base_tags
+}
+
 module "route53" {
   count  = var.enable_route53 ? 1 : 0
   source = "./modules/route53"
@@ -201,19 +421,33 @@ module "route53" {
   private_zone   = var.route53_private_zone
   record_name    = var.route53_record_name
   record_type    = var.route53_record_type
-  primary_record = var.route53_primary_record
-  create_alias   = var.route53_create_alias
+  create_alias   = true
+  primary_record = aws_lb.primary.dns_name
 
-  primary_alias_name    = var.route53_primary_alias_name
-  primary_alias_zone_id = var.route53_primary_alias_zone_id
+  primary_alias_name    = aws_lb.primary.dns_name
+  primary_alias_zone_id = aws_lb.primary.zone_id
 
-  create_secondary_record      = var.route53_create_secondary_record
-  secondary_record             = var.route53_secondary_record
-  secondary_alias_name         = var.route53_secondary_alias_name
-  secondary_alias_zone_id      = var.route53_secondary_alias_zone_id
+  routing_policy               = var.route53_routing_policy
+  create_secondary_record      = var.enable_secondary_cluster
+  secondary_record             = var.enable_secondary_cluster ? aws_lb.secondary[0].dns_name : ""
+  secondary_alias_name         = var.enable_secondary_cluster ? aws_lb.secondary[0].dns_name : ""
+  secondary_alias_zone_id      = var.enable_secondary_cluster ? aws_lb.secondary[0].zone_id : ""
   alias_evaluate_target_health = var.route53_alias_evaluate_target_health
   primary_weight               = var.route53_primary_weight
   secondary_weight             = var.route53_secondary_weight
+
+  primary_health_check_enabled           = var.route53_primary_health_check_enabled
+  primary_health_check_fqdn              = aws_lb.primary.dns_name
+  primary_health_check_port              = var.route53_primary_health_check_port
+  primary_health_check_type              = var.route53_primary_health_check_type
+  primary_health_check_resource_path     = var.route53_primary_health_check_resource_path
+  primary_health_check_failure_threshold = var.route53_primary_health_check_failure_threshold
+  primary_health_check_request_interval  = var.route53_primary_health_check_request_interval
+  primary_health_check_enable_sni        = var.route53_primary_health_check_enable_sni
+  primary_health_check_search_string     = var.route53_primary_health_check_search_string
+  primary_health_check_regions           = var.route53_primary_health_check_regions
+
+  depends_on = [aws_lb.primary]
 }
 
 module "oidc_iam" {
@@ -241,7 +475,7 @@ module "ecr" {
 
   repositories = [
     {
-      name                 = "todo-nodejs"
+      name                 = "aws-retail-store-sample-app"
       image_tag_mutability = "IMMUTABLE"
       scan_on_push         = true
       tags = merge(local.base_tags, {
@@ -259,12 +493,12 @@ module "github_ecr_role" {
 
 
   github_org  = "AndrewDoan01"
-  github_repo = ""
+  github_repo = "aws-retail-store-sample-app"
 
   environment = "dev"
 
   role_name = "github-actions-ecr-dev"
 
-  repository_arns = ["arn:aws:ecr:ap-southeast-1:123456789012:repository/todo-nodejs"]
+  repository_arns = [module.ecr.repository_arns["aws-retail-store-sample-app"]]
 
 }

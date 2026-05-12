@@ -2,6 +2,7 @@ data "aws_caller_identity" "current" {}
 
 data "aws_partition" "current" {}
 
+ # Reuse the GitHub OIDC provider so Actions can assume this ECR push role.
 data "aws_iam_openid_connect_provider" "github" {
 
   url = "https://token.actions.githubusercontent.com"
@@ -9,6 +10,7 @@ data "aws_iam_openid_connect_provider" "github" {
   tags = var.tags
 }
 
+ # Trust policy for GitHub Actions environments scoped to this repository.
 data "aws_iam_policy_document" "assume_role" {
 
   statement {
@@ -51,7 +53,7 @@ data "aws_iam_policy_document" "assume_role" {
   }
 }
 
-# IAM Role
+# IAM role used by GitHub Actions for ECR pushes.
 resource "aws_iam_role" "this" {
 
   name = var.role_name
@@ -61,7 +63,7 @@ resource "aws_iam_role" "this" {
   tags = var.tags
 }
 
-# ECR Permissions
+# Minimal ECR permissions required to authenticate and push images.
 data "aws_iam_policy_document" "ecr_permissions" {
   # Required for login
   statement {
@@ -99,7 +101,7 @@ data "aws_iam_policy_document" "ecr_permissions" {
   }
 }
 
-# Attach Policy
+# Attach the ECR permissions to the role.
 resource "aws_iam_role_policy" "this" {
 
   name = "${var.role_name}-policy"

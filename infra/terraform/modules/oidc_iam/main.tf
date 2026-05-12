@@ -2,6 +2,7 @@ data "aws_caller_identity" "current" {}
 
 data "aws_partition" "current" {}
 
+ # Create the GitHub OIDC provider only when the stack is responsible for managing it.
 resource "aws_iam_openid_connect_provider" "github_actions" {
   count = var.create_github_oidc_provider ? 1 : 0
 
@@ -16,10 +17,12 @@ resource "aws_iam_openid_connect_provider" "github_actions" {
 }
 
 locals {
+  # Fall back to the inferred provider ARN when an external provider is supplied.
   inferred_oidc_provider_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/token.actions.githubusercontent.com"
   oidc_provider_arn          = var.create_github_oidc_provider ? aws_iam_openid_connect_provider.github_actions[0].arn : coalesce(var.github_oidc_provider_arn, local.inferred_oidc_provider_arn)
 }
 
+ # Build one assume-role policy per deployment environment.
 data "aws_iam_policy_document" "assume_role" {
   for_each = toset(var.environments)
 
@@ -46,6 +49,7 @@ data "aws_iam_policy_document" "assume_role" {
   }
 }
 
+ # Provision a separate deploy role for each GitHub environment.
 resource "aws_iam_role" "deploy" {
   for_each = toset(var.environments)
 
@@ -56,6 +60,7 @@ resource "aws_iam_role" "deploy" {
   })
 }
 
+ # Scope each role to the EKS clusters and ECR actions needed for that environment.
 data "aws_iam_policy_document" "deploy_permissions" {
   for_each = toset(var.environments)
 
@@ -97,6 +102,7 @@ data "aws_iam_policy_document" "deploy_permissions" {
   }
 }
 
+ # Attach the environment-specific permissions to the corresponding role.
 resource "aws_iam_role_policy" "deploy" {
   for_each = toset(var.environments)
 

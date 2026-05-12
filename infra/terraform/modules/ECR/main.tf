@@ -1,3 +1,4 @@
+ # Create one ECR repository per configured image target.
 resource "aws_ecr_repository" "this" {
   for_each = { for r in var.repositories : r["name"] => r }
 
@@ -16,6 +17,7 @@ resource "aws_ecr_repository" "this" {
   tags = merge(var.tags, lookup(each.value, "tags", {}))
 }
 
+ # Attach lifecycle rules only where the repository definition supplies them.
 resource "aws_ecr_lifecycle_policy" "this" {
   for_each = { for r in var.repositories : r["name"] => r if contains(keys(r), "lifecycle_policy") && r["lifecycle_policy"] != "" }
 
@@ -23,6 +25,7 @@ resource "aws_ecr_lifecycle_policy" "this" {
   policy     = each.value["lifecycle_policy"]
 }
 
+ # Apply any repository-level access policy passed in with the repository definition.
 resource "aws_ecr_repository_policy" "this" {
   for_each = { for r in var.repositories : r["name"] => r if contains(keys(r), "policy") && r["policy"] != "" }
 

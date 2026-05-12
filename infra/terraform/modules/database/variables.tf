@@ -6,17 +6,12 @@ variable "identifier" {
 variable "db_name" {
   description = "Initial database name."
   type        = string
+  default     = null
 }
 
 variable "username" {
   description = "Master username for the database."
   type        = string
-}
-
-variable "password" {
-  description = "Master password for the database."
-  type        = string
-  sensitive   = true
   default     = null
 }
 
@@ -112,4 +107,11 @@ variable "db_password" {
   description = "Master password for RDS"
   type        = string
   sensitive   = true
+  default     = null
+}
+
+variable "replicate_source_db" {
+  description = "Source DB instance identifier for read replica (leave empty for primary)."
+  type        = string
+  default     = null
 }

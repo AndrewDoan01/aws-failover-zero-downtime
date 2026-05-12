@@ -3,6 +3,60 @@ variable "project_name" {
   type        = string
 }
 
+variable "create_prometheus_workspace" {
+  description = "Whether to create an Amazon Managed Prometheus workspace."
+  type        = bool
+  default     = true
+}
+
+variable "prometheus_workspace_alias" {
+  description = "Alias assigned to the Prometheus workspace."
+  type        = string
+  default     = ""
+}
+
+variable "prometheus_logging_group_arn" {
+  description = "Optional CloudWatch Logs group ARN for Prometheus query logging."
+  type        = string
+  default     = ""
+}
+
+variable "create_grafana_workspace" {
+  description = "Whether to create an Amazon Managed Grafana workspace."
+  type        = bool
+  default     = true
+}
+
+variable "grafana_account_access_type" {
+  description = "Grafana workspace account access type."
+  type        = string
+  default     = "CURRENT_ACCOUNT"
+}
+
+variable "grafana_authentication_providers" {
+  description = "Grafana authentication providers."
+  type        = list(string)
+  default     = ["AWS_SSO"]
+}
+
+variable "grafana_permission_type" {
+  description = "Grafana workspace permission model."
+  type        = string
+  default     = "SERVICE_MANAGED"
+}
+
+variable "grafana_data_sources" {
+  description = "Grafana data sources enabled for the workspace."
+  type        = list(string)
+  default     = ["PROMETHEUS", "CLOUDWATCH"]
+}
+
+variable "grafana_description" {
+  description = "Grafana workspace description."
+  type        = string
+  default     = "Observability workspace"
+}
+
 variable "alarm_topic_name" {
   description = "SNS topic name for operational alerts."
   type        = string

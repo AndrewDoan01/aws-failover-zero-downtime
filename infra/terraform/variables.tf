@@ -191,6 +191,36 @@ variable "create_cluster_resource_groups" {
   default     = true
 }
 
+variable "enable_monitoring" {
+  description = "Whether to create Prometheus and Grafana monitoring workspaces."
+  type        = bool
+  default     = true
+}
+
+variable "monitoring_alarm_topic_name" {
+  description = "SNS topic name used by monitoring alarms."
+  type        = string
+  default     = "infra-alerts"
+}
+
+variable "monitoring_prometheus_workspace_alias" {
+  description = "Alias assigned to the Amazon Managed Prometheus workspace."
+  type        = string
+  default     = ""
+}
+
+variable "monitoring_prometheus_logging_group_arn" {
+  description = "Optional CloudWatch Logs group ARN for Prometheus query logging."
+  type        = string
+  default     = ""
+}
+
+variable "monitoring_grafana_description" {
+  description = "Description assigned to the Grafana workspace."
+  type        = string
+  default     = "Observability workspace"
+}
+
 variable "enable_route53" {
   description = "Whether to create Route53 records."
   type        = bool
@@ -221,6 +251,12 @@ variable "route53_record_type" {
   default     = "CNAME"
 }
 
+variable "route53_routing_policy" {
+  description = "Route53 routing policy for the DNS record set."
+  type        = string
+  default     = "FAILOVER"
+}
+
 variable "route53_primary_record" {
   description = "Primary DNS target."
   type        = string
@@ -246,9 +282,9 @@ variable "route53_primary_alias_zone_id" {
 }
 
 variable "route53_create_secondary_record" {
-  description = "Whether to create secondary weighted record."
+  description = "Whether to create the secondary failover record."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "route53_secondary_record" {
@@ -285,4 +321,64 @@ variable "route53_secondary_weight" {
   description = "Weighted routing weight for secondary record."
   type        = number
   default     = 0
+}
+
+variable "route53_primary_health_check_enabled" {
+  description = "Whether to create the primary Route53 health check."
+  type        = bool
+  default     = true
+}
+
+variable "route53_primary_health_check_fqdn" {
+  description = "Health check FQDN for the primary endpoint. Falls back to the primary alias name or record target when empty."
+  type        = string
+  default     = ""
+}
+
+variable "route53_primary_health_check_port" {
+  description = "Primary Route53 health check port."
+  type        = number
+  default     = 443
+}
+
+variable "route53_primary_health_check_type" {
+  description = "Primary Route53 health check type."
+  type        = string
+  default     = "HTTPS"
+}
+
+variable "route53_primary_health_check_resource_path" {
+  description = "HTTP path checked by Route53 on the primary endpoint."
+  type        = string
+  default     = "/health"
+}
+
+variable "route53_primary_health_check_failure_threshold" {
+  description = "Number of failed checks before Route53 marks the primary endpoint unhealthy."
+  type        = number
+  default     = 3
+}
+
+variable "route53_primary_health_check_request_interval" {
+  description = "Seconds between Route53 health check requests."
+  type        = number
+  default     = 30
+}
+
+variable "route53_primary_health_check_enable_sni" {
+  description = "Whether to enable SNI for the primary HTTPS health check."
+  type        = bool
+  default     = true
+}
+
+variable "route53_primary_health_check_search_string" {
+  description = "Optional text that Route53 must find in the health check response body."
+  type        = string
+  default     = ""
+}
+
+variable "route53_primary_health_check_regions" {
+  description = "Optional Route53 health check regions. Leave empty for the default managed regions."
+  type        = list(string)
+  default     = []
 }

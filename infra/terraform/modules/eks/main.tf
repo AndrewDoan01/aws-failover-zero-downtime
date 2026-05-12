@@ -6,6 +6,7 @@ terraform {
   }
 }
 
+ # Delegate cluster and node group provisioning to the upstream EKS module.
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 20.0"

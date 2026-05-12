@@ -1,3 +1,4 @@
+# Build a dedicated subnet group so each RDS instance only uses the approved private subnets.
 resource "aws_db_subnet_group" "this" {
   name       = "${var.identifier}-subnet-group"
   subnet_ids = var.subnet_ids
@@ -7,6 +8,7 @@ resource "aws_db_subnet_group" "this" {
   })
 }
 
+# Allow application and peer security groups to reach the database port.
 resource "aws_security_group" "db" {
   name        = "${var.identifier}-db-sg"
   description = "Security group for RDS instance"
@@ -47,23 +49,25 @@ resource "aws_security_group" "db" {
   })
 }
 
+# Provision the managed database instance with encrypted storage and retained backups.
 resource "aws_db_instance" "this" {
   identifier                 = var.identifier
-  engine                     = var.engine
-  engine_version             = var.engine_version
+  replicate_source_db        = var.replicate_source_db
+  engine                     = var.replicate_source_db == null ? var.engine : null
+  engine_version             = var.replicate_source_db == null ? var.engine_version : null
   instance_class             = var.instance_class
-  allocated_storage          = var.allocated_storage
-  max_allocated_storage      = var.max_allocated_storage
-  db_name                    = var.db_name
-  username                   = var.username
-  password                   = var.db_password
-  port                       = var.port
+  allocated_storage          = var.replicate_source_db == null ? var.allocated_storage : null
+  max_allocated_storage      = var.replicate_source_db == null ? var.max_allocated_storage : null
+  db_name                    = var.replicate_source_db == null ? var.db_name : null
+  username                   = var.replicate_source_db == null ? var.username : null
+  password                   = var.replicate_source_db == null ? var.db_password : null
+  port                       = var.replicate_source_db == null ? var.port : null
   db_subnet_group_name       = aws_db_subnet_group.this.name
   vpc_security_group_ids     = [aws_security_group.db.id]
-  multi_az                   = var.multi_az
+  multi_az                   = var.replicate_source_db == null ? var.multi_az : false
   publicly_accessible        = var.publicly_accessible
   storage_encrypted          = true
-  backup_retention_period    = var.backup_retention_period
+  backup_retention_period    = var.replicate_source_db == null ? var.backup_retention_period : 3
   skip_final_snapshot        = var.skip_final_snapshot
   final_snapshot_identifier  = var.skip_final_snapshot ? null : "${var.identifier}-final"
   deletion_protection        = !var.skip_final_snapshot

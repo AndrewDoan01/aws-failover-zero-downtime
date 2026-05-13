@@ -251,12 +251,6 @@ variable "route53_record_type" {
   default     = "CNAME"
 }
 
-variable "route53_routing_policy" {
-  description = "Route53 routing policy for the DNS record set."
-  type        = string
-  default     = "FAILOVER"
-}
-
 variable "route53_primary_record" {
   description = "Primary DNS target."
   type        = string
@@ -309,18 +303,6 @@ variable "route53_alias_evaluate_target_health" {
   description = "Whether Route53 evaluates alias target health."
   type        = bool
   default     = true
-}
-
-variable "route53_primary_weight" {
-  description = "Weighted routing weight for primary record."
-  type        = number
-  default     = 100
-}
-
-variable "route53_secondary_weight" {
-  description = "Weighted routing weight for secondary record."
-  type        = number
-  default     = 0
 }
 
 variable "route53_primary_health_check_enabled" {

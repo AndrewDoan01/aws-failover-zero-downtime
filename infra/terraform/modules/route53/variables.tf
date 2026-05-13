@@ -25,17 +25,6 @@ variable "record_type" {
   }
 }
 
-variable "routing_policy" {
-  description = "Route53 routing policy to use for the record set."
-  type        = string
-  default     = "FAILOVER"
-
-  validation {
-    condition     = contains(["FAILOVER", "WEIGHTED"], upper(var.routing_policy)) && (upper(var.routing_policy) != "FAILOVER" || var.create_secondary_record)
-    error_message = "routing_policy must be one of: FAILOVER, WEIGHTED, and FAILOVER requires create_secondary_record to be true."
-  }
-}
-
 variable "ttl" {
   description = "TTL for the DNS records in seconds."
   type        = number
@@ -99,18 +88,6 @@ variable "create_secondary_record" {
   description = "Whether to create secondary weighted record."
   type        = bool
   default     = false
-}
-
-variable "primary_weight" {
-  description = "Weight for primary record."
-  type        = number
-  default     = 100
-}
-
-variable "secondary_weight" {
-  description = "Weight for secondary record."
-  type        = number
-  default     = 0
 }
 
 variable "primary_health_check_enabled" {

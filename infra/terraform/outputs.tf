@@ -79,6 +79,21 @@ output "secondary_database_endpoint" {
   value       = try(module.secondary_database[0].db_instance_endpoint, null)
 }
 
+output "rds_failover_lambda_name" {
+  description = "Lambda function name used to promote the secondary database."
+  value       = try(module.rds_failover_automation[0].lambda_function_name, null)
+}
+
+output "rds_failover_event_topic_arn" {
+  description = "SNS topic ARN used for RDS failover events."
+  value       = try(module.rds_failover_automation[0].failover_event_topic_arn, null)
+}
+
+output "rds_replication_lag_alarm_name" {
+  description = "CloudWatch alarm name for replica lag."
+  value       = try(module.rds_failover_automation[0].replication_lag_alarm_name, null)
+}
+
 output "primary_database_arn" {
   description = "Primary RDS database ARN."
   value       = module.primary_database.db_instance_arn

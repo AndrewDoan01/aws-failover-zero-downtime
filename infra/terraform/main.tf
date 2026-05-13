@@ -220,9 +220,9 @@ module "secondary_database" {
 
   source = "./modules/database"
 
-  identifier         = "${var.db_identifier}-secondary"
-  vpc_id             = module.secondary_vpc[0].vpc_id
-  subnet_ids         = module.secondary_vpc[0].private_subnet_ids
+  identifier          = "${var.db_identifier}-secondary"
+  vpc_id              = module.secondary_vpc[0].vpc_id
+  subnet_ids          = module.secondary_vpc[0].private_subnet_ids
   replicate_source_db = module.primary_database.db_instance_arn
 
   tags = merge(local.secondary_common_tags, {
@@ -427,14 +427,11 @@ module "route53" {
   primary_alias_name    = aws_lb.primary.dns_name
   primary_alias_zone_id = aws_lb.primary.zone_id
 
-  routing_policy               = var.route53_routing_policy
   create_secondary_record      = var.enable_secondary_cluster
   secondary_record             = var.enable_secondary_cluster ? aws_lb.secondary[0].dns_name : ""
   secondary_alias_name         = var.enable_secondary_cluster ? aws_lb.secondary[0].dns_name : ""
   secondary_alias_zone_id      = var.enable_secondary_cluster ? aws_lb.secondary[0].zone_id : ""
   alias_evaluate_target_health = var.route53_alias_evaluate_target_health
-  primary_weight               = var.route53_primary_weight
-  secondary_weight             = var.route53_secondary_weight
 
   primary_health_check_enabled           = var.route53_primary_health_check_enabled
   primary_health_check_fqdn              = aws_lb.primary.dns_name

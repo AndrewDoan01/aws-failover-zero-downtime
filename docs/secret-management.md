@@ -20,6 +20,8 @@ $env:AWS_PROFILE = "your-profile"
 terraform -chdir=infra/terraform plan
 ```
 
+If the active shell has stale access keys or an expired session token, set a named profile for Terraform explicitly instead of relying on inherited `AWS_*` variables.
+
 Optional temporary credentials:
 
 ```powershell

@@ -1,10 +1,22 @@
 provider "aws" {
   region = var.primary_region
+
+  profile = var.aws_profile
+
+  access_key = var.AWS_ACCESS_KEY_ID
+  secret_key = var.AWS_SECRET_ACCESS_KEY
+  token      = var.aws_session_token
 }
 
 provider "aws" {
   alias  = "secondary"
   region = var.secondary_region
+
+  profile = var.aws_profile
+
+  access_key = var.AWS_ACCESS_KEY_ID
+  secret_key = var.AWS_SECRET_ACCESS_KEY
+  token      = var.aws_session_token
 }
 
 locals {
@@ -229,6 +241,29 @@ module "secondary_database" {
     Service      = "database"
     DatabaseRole = "read-replica"
   })
+}
+
+module "rds_failover_automation" {
+  count = var.enable_secondary_cluster && var.enable_db_failover_automation ? 1 : 0
+
+  providers = {
+    aws           = aws
+    aws.secondary = aws.secondary
+  }
+
+  source = "./modules/rds_failover_automation"
+
+  project_name                       = var.project_name
+  primary_db_identifier              = module.primary_database.db_instance_id
+  secondary_db_identifier            = module.secondary_database[0].db_instance_id
+  secondary_region                   = var.secondary_region
+  rds_event_categories               = var.rds_failover_event_categories
+  create_replication_lag_alarm       = var.enable_rds_replication_lag_alarm
+  replication_lag_threshold_seconds  = var.rds_replication_lag_threshold_seconds
+  replication_lag_evaluation_periods = var.rds_replication_lag_evaluation_periods
+  replication_lag_period             = var.rds_replication_lag_period_seconds
+
+  tags = local.base_tags
 }
 
 # Security group for secondary ALB

@@ -10,14 +10,14 @@ variable "secondary_region" {
   default     = "ap-northeast-1"
 }
 
-variable "aws_access_key_id" {
+variable "AWS_ACCESS_KEY_ID" {
   description = "AWS access key ID (optional, prefer environment/shared credentials when possible)."
   type        = string
   default     = null
   sensitive   = true
 }
 
-variable "aws_secret_access_key" {
+variable "AWS_SECRET_ACCESS_KEY" {
   description = "AWS secret access key (optional, prefer environment/shared credentials when possible)."
   type        = string
   default     = null
@@ -29,6 +29,12 @@ variable "aws_session_token" {
   type        = string
   default     = null
   sensitive   = true
+}
+
+variable "aws_profile" {
+  description = "AWS named profile to use when resolving credentials (optional)."
+  type        = string
+  default     = null
 }
 
 variable "project_name" {
@@ -159,6 +165,42 @@ variable "enable_secondary_cluster" {
   description = "Whether passive DR cluster naming and grouping are enabled."
   type        = bool
   default     = false
+}
+
+variable "enable_db_failover_automation" {
+  description = "Whether to create Lambda-based RDS failover automation and replication lag alarms."
+  type        = bool
+  default     = true
+}
+
+variable "rds_failover_event_categories" {
+  description = "RDS event categories that should trigger the failover Lambda."
+  type        = list(string)
+  default     = ["availability", "failure", "failover"]
+}
+
+variable "enable_rds_replication_lag_alarm" {
+  description = "Whether to create the CloudWatch alarm for replica lag."
+  type        = bool
+  default     = true
+}
+
+variable "rds_replication_lag_threshold_seconds" {
+  description = "Maximum allowed replica lag before the alarm fires."
+  type        = number
+  default     = 5
+}
+
+variable "rds_replication_lag_evaluation_periods" {
+  description = "Number of periods to evaluate for the replication lag alarm."
+  type        = number
+  default     = 2
+}
+
+variable "rds_replication_lag_period_seconds" {
+  description = "Period in seconds for the replication lag alarm."
+  type        = number
+  default     = 60
 }
 
 variable "eks_secondary_region_cluster_name" {

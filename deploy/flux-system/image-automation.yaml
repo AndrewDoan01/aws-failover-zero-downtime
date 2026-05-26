@@ -1,0 +1,43 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: retail-store-sample-app
+  namespace: flux-system
+spec:
+  image: ghcr.io/example/retail-store-sample-app
+  interval: 5m
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: retail-store-sample-app-prod
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: retail-store-sample-app
+  filterTags:
+    pattern: "^prod$"
+  policy:
+    alphabetical:
+      order: asc
+  digestReflectionPolicy: Always
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageUpdateAutomation
+metadata:
+  name: retail-store-sample-app-prod
+  namespace: flux-system
+spec:
+  interval: 10m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  git:
+    commit:
+      author:
+        name: fluxbot
+        email: fluxcdbot@users.noreply.github.com
+    push:
+      branch: main
+  update:
+    path: deploy/clusters/prod

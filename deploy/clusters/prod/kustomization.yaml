@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: retail-store-sample-prod
+
+resources:
+  - ../../base
+
+images:
+  - name: ghcr.io/example/retail-store-sample-app
+    newName: ghcr.io/example/retail-store-sample-app
+    newTag: prod # {"$imagepolicy": "flux-system:retail-store-sample-app-prod:tag"}
+    digest: "" # {"$imagepolicy": "flux-system:retail-store-sample-app-prod:digest"}
+
+patches:
+  - path: deployment-patch.yaml
+  - path: configmap-patch.yaml
+  - path: ingress-patch.yaml

@@ -10,14 +10,14 @@ variable "secondary_region" {
   default     = "ap-northeast-1"
 }
 
-variable "aws_access_key_id" {
+variable "AWS_ACCESS_KEY_ID" {
   description = "AWS access key ID (optional, prefer environment/shared credentials when possible)."
   type        = string
   default     = null
   sensitive   = true
 }
 
-variable "aws_secret_access_key" {
+variable "AWS_SECRET_ACCESS_KEY" {
   description = "AWS secret access key (optional, prefer environment/shared credentials when possible)."
   type        = string
   default     = null
@@ -29,6 +29,12 @@ variable "aws_session_token" {
   type        = string
   default     = null
   sensitive   = true
+}
+
+variable "aws_profile" {
+  description = "AWS named profile to use when resolving credentials (optional)."
+  type        = string
+  default     = null
 }
 
 variable "project_name" {

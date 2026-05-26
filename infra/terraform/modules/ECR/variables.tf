@@ -1,7 +1,16 @@
 variable "repositories" {
-  description = "List of repositories to create. Each entry is a map with keys: name, image_tag_mutability, scan_on_push, encryption_type, kms_key, tags, lifecycle_policy, policy"
-  type        = list(map(any))
-  default     = []
+  description = "List of repositories to create. Each entry defines the repository name and optional settings."
+  type = list(object({
+    name                 = string
+    image_tag_mutability = optional(string)
+    scan_on_push         = optional(bool)
+    encryption_type      = optional(string)
+    kms_key              = optional(string)
+    tags                 = optional(map(string))
+    lifecycle_policy     = optional(string)
+    policy               = optional(string)
+  }))
+  default = []
 }
 
 variable "image_tag_mutability" {

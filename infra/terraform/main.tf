@@ -1,10 +1,22 @@
 provider "aws" {
   region = var.primary_region
+
+  profile = var.aws_profile
+
+  access_key = var.AWS_ACCESS_KEY_ID
+  secret_key = var.AWS_SECRET_ACCESS_KEY
+  token      = var.aws_session_token
 }
 
 provider "aws" {
   alias  = "secondary"
   region = var.secondary_region
+
+  profile = var.aws_profile
+
+  access_key = var.AWS_ACCESS_KEY_ID
+  secret_key = var.AWS_SECRET_ACCESS_KEY
+  token      = var.aws_session_token
 }
 
 locals {

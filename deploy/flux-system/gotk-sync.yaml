@@ -1,0 +1,64 @@
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: GitRepository
+metadata:
+  name: aws-retail-store-sample-app
+  namespace: flux-system
+spec:
+  interval: 1m
+  url: https://github.com/aws/aws-retail-store-sample-app
+  ref:
+    branch: main
+  secretRef:
+    name: github-credentials
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: catalog-test
+  namespace: flux-system
+spec:
+  interval: 5m
+  sourceRef:
+    kind: GitRepository
+    name: aws-retail-store-sample-app
+  path: ./deploy/services/catalog/overlays/test
+  prune: true
+  wait: true
+  timeout: 5m
+  targetNamespace: test
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: catalog-staging
+  namespace: flux-system
+spec:
+  interval: 5m
+  sourceRef:
+    kind: GitRepository
+    name: aws-retail-store-sample-app
+  path: ./deploy/services/catalog/overlays/staging
+  prune: true
+  wait: true
+  timeout: 5m
+  targetNamespace: staging
+  dependsOn:
+    - name: catalog-test
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: catalog-prod
+  namespace: flux-system
+spec:
+  interval: 10m
+  sourceRef:
+    kind: GitRepository
+    name: aws-retail-store-sample-app
+  path: ./deploy/services/catalog/overlays/prod
+  prune: true
+  wait: true
+  timeout: 5m
+  targetNamespace: prod
+  dependsOn:
+    - name: catalog-staging

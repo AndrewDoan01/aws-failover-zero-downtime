@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: staging
+
+bases:
+  - ../../base
+
+commonLabels:
+  environment: staging
+
+replicas:
+  - name: catalog
+    count: 2
+
+configMapGenerator:
+  - name: catalog-config
+    behavior: merge
+    literals:
+      - LOG_LEVEL=info
+      - DATABASE_ENABLED=true
+      - CACHE_ENABLED=true
+
+patchesStrategicMerge:
+  - deployment-patch.yaml
+
+images:
+  - name: ghcr.io/aws/aws-retail-store-sample-app/catalog
+    newTag: staging-latest

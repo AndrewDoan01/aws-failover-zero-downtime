@@ -1,11 +1,11 @@
-apiVersion: source.toolkit.fluxcd.io/v1beta2
+apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
   name: aws-retail-store-sample-app
   namespace: flux-system
 spec:
   interval: 1m
-  url: https://github.com/aws/aws-retail-store-sample-app
+  url: https://github.com/AndrewDoan01/aws-failover-zero-downtime
   ref:
     branch: main
   secretRef:
@@ -21,11 +21,11 @@ spec:
   sourceRef:
     kind: GitRepository
     name: aws-retail-store-sample-app
-  path: ./deploy/services/catalog/overlays/test
+  path: ./deploy/clusters/test
   prune: true
   wait: true
   timeout: 5m
-  targetNamespace: test
+  targetNamespace: retail-store-sample-test
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -37,11 +37,11 @@ spec:
   sourceRef:
     kind: GitRepository
     name: aws-retail-store-sample-app
-  path: ./deploy/services/catalog/overlays/staging
+  path: ./deploy/clusters/staging
   prune: true
   wait: true
   timeout: 5m
-  targetNamespace: staging
+  targetNamespace: retail-store-sample-staging
   dependsOn:
     - name: catalog-test
 ---
@@ -55,10 +55,10 @@ spec:
   sourceRef:
     kind: GitRepository
     name: aws-retail-store-sample-app
-  path: ./deploy/services/catalog/overlays/prod
+  path: ./deploy/clusters/prod
   prune: true
   wait: true
   timeout: 5m
-  targetNamespace: prod
+  targetNamespace: retail-store-sample-prod
   dependsOn:
     - name: catalog-staging

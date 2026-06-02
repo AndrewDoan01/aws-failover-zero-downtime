@@ -30,19 +30,19 @@ variable "engine_version" {
 variable "instance_class" {
   description = "RDS instance class."
   type        = string
-  default     = "db.t3.medium"
+  default     = "db.t3.small"
 }
 
 variable "allocated_storage" {
   description = "Initial allocated storage in GB."
   type        = number
-  default     = 20
+  default     = 10
 }
 
 variable "max_allocated_storage" {
   description = "Maximum storage autoscaling limit in GB."
   type        = number
-  default     = 100
+  default     = 20
 }
 
 variable "port" {
@@ -76,7 +76,7 @@ variable "allowed_security_group_ids" {
 variable "multi_az" {
   description = "Whether to deploy in multiple availability zones."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "publicly_accessible" {

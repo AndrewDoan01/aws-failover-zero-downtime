@@ -19,6 +19,8 @@ provider "aws" {
   token      = var.aws_session_token
 }
 
+data "aws_caller_identity" "current" {}
+
 locals {
   base_tags = merge(
     {
@@ -27,6 +29,23 @@ locals {
     },
     var.tags
   )
+
+  eks_admin_principal_arn = coalesce(var.eks_admin_principal_arn, data.aws_caller_identity.current.arn)
+
+  primary_eks_access_entries = {
+    terraform-admin = {
+      principal_arn = local.eks_admin_principal_arn
+
+      policy_associations = {
+        admin = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+  }
 
   primary_common_tags = merge(local.base_tags, {
     RegionRole = "primary"
@@ -90,9 +109,10 @@ module "primary_database" {
 module "primary_eks" {
   source = "./modules/eks"
 
-  cluster_name = var.eks_primary_region_cluster_name
-  vpc_id       = module.primary_vpc.vpc_id
-  subnet_ids   = module.primary_vpc.private_subnet_ids
+  cluster_name   = var.eks_primary_region_cluster_name
+  vpc_id         = module.primary_vpc.vpc_id
+  subnet_ids     = module.primary_vpc.private_subnet_ids
+  access_entries = local.primary_eks_access_entries
 
   tags = local.primary_cluster_tags
 }
@@ -367,7 +387,7 @@ resource "aws_lb_listener" "secondary_http" {
 resource "aws_resourcegroups_group" "primary_eks_cluster" {
   count = var.create_cluster_resource_groups ? 1 : 0
 
-  name = "${var.project_name}-primary-eks-cluster-rg"
+  name = "rg-${var.project_name}-primary-eks-cluster"
 
   resource_query {
     type = "TAG_FILTERS_1_0"
@@ -402,7 +422,7 @@ resource "aws_resourcegroups_group" "secondary_eks_cluster" {
 
   provider = aws.secondary
 
-  name = "${var.project_name}-secondary-eks-cluster-rg"
+  name = "rg-${var.project_name}-secondary-eks-cluster"
 
   resource_query {
     type = "TAG_FILTERS_1_0"

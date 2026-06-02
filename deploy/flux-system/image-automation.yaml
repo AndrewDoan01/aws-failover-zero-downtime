@@ -4,7 +4,7 @@ metadata:
   name: retail-store-sample-app
   namespace: flux-system
 spec:
-  image: ghcr.io/example/retail-store-sample-app
+  image: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app
   interval: 5m
 ---
 apiVersion: image.toolkit.fluxcd.io/v1beta2
@@ -21,6 +21,7 @@ spec:
     alphabetical:
       order: asc
   digestReflectionPolicy: Always
+  interval: 5m
 ---
 apiVersion: image.toolkit.fluxcd.io/v1beta2
 kind: ImageUpdateAutomation
@@ -31,7 +32,7 @@ spec:
   interval: 10m
   sourceRef:
     kind: GitRepository
-    name: flux-system
+    name: aws-retail-store-sample-app
   git:
     commit:
       author:

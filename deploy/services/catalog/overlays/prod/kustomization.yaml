@@ -25,5 +25,5 @@ patchesStrategicMerge:
   - deployment-patch.yaml
 
 images:
-  - name: ghcr.io/aws/aws-retail-store-sample-app/catalog
+  - name: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app
     newTag: prod

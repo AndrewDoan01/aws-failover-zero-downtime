@@ -14,6 +14,6 @@ resources:
   - ingress.yaml
 
 images:
-  - name: ghcr.io/aws/aws-retail-store-sample-app/catalog
-    newName: ghcr.io/aws/aws-retail-store-sample-app/catalog
+  - name: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app
+    newName: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app
     newTag: 0.0.0

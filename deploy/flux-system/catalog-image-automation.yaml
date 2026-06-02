@@ -1,4 +1,4 @@
-apiVersion: image.toolkit.fluxcd.io/v1beta1
+apiVersion: image.toolkit.fluxcd.io/v1beta2
 kind: ImageUpdateAutomation
 metadata:
   name: catalog-test
@@ -15,10 +15,10 @@ spec:
         name: Flux Automation
       messageTemplate: "chore: update catalog test image"
   update:
-    path: ./deploy/services/catalog/overlays/test
+    path: ./deploy/clusters/test
     strategy: Setters
 ---
-apiVersion: image.toolkit.fluxcd.io/v1beta1
+apiVersion: image.toolkit.fluxcd.io/v1beta2
 kind: ImageUpdateAutomation
 metadata:
   name: catalog-staging
@@ -35,10 +35,10 @@ spec:
         name: Flux Automation
       messageTemplate: "chore: update catalog staging image"
   update:
-    path: ./deploy/services/catalog/overlays/staging
+    path: ./deploy/clusters/staging
     strategy: Setters
 ---
-apiVersion: image.toolkit.fluxcd.io/v1beta1
+apiVersion: image.toolkit.fluxcd.io/v1beta2
 kind: ImageUpdateAutomation
 metadata:
   name: catalog-prod
@@ -55,5 +55,5 @@ spec:
         name: Flux Automation
       messageTemplate: "chore: update catalog prod image"
   update:
-    path: ./deploy/services/catalog/overlays/prod
+    path: ./deploy/clusters/prod
     strategy: Setters

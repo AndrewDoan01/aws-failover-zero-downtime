@@ -1,30 +1,66 @@
-**FluxCD + Kustomize — Hướng Dẫn Triển Khai**
+**FluxCD + Kustomize — Hướng Dẫn Triển Khai (Chi Tiết)**
 
-**Tổng Quan**: Repo này dùng Kustomize (bases + overlays) để tổ chức Kubernetes manifests và FluxCD (GitRepository + Kustomization + Image Toolkit) để tự động sync và tự động cập nhật image.
+Mục tiêu của tài liệu: hướng dẫn từng bước để chuẩn bị hạ tầng với Terraform, cấu hình secrets, cài FluxCD, bootstrap repo Kustomize, bật Image Automation và thao tác vận hành cơ bản.
 
-**Prerequisites**:
-- **Cluster & kubectl**: Truy cập tới cluster Kubernetes.
-- **Flux CLI (tùy chọn)**: `flux` giúp bootstrap; có thể dùng `kubectl apply -k` thay thế.
-- **Git token/SSH**: PAT hoặc SSH key có quyền đọc (và quyền ghi nếu ImageUpdateAutomation sẽ push).
+1) Tổng quan workflow
+- Terraform tạo hạ tầng (EKS, VPC, IAM, S3 backend, ...)
+- Sau khi có cluster, dùng `kubectl` để xác thực và cài Flux controllers.
+- Flux `GitRepository` CR trỏ tới repo; `Kustomization` CR trỏ tới từng overlay (test/staging/prod).
+- Image Toolkit (ImageRepository/ImagePolicy/ImageUpdateAutomation) detect image updates và (nếu có quyền) commit thay đổi vào repo; Flux apply thay đổi đó.
 
-**Tệp tham chiếu chính**:
-- GitSource + Kustomizations: [deploy/flux-system/gotk-sync.yaml](../deploy/flux-system/gotk-sync.yaml)
-- Image automation: [deploy/flux-system/catalog-image-automation.yaml](../deploy/flux-system/catalog-image-automation.yaml)
-- Ví dụ overlay: [deploy/services/catalog/overlays/prod/kustomization.yaml](../deploy/services/catalog/overlays/prod/kustomization.yaml)
+2) Chuẩn bị môi trường & quyền
+- Tools local: `terraform`, `aws` CLI, `kubectl`, `flux` (CLI optional). Kiểm tra:
+```bash
+terraform version
+aws --version
+kubectl version --client
+flux --version
+```
+- AWS credentials: đặt `AWS_PROFILE` hoặc `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`AWS_REGION`.
+- GitHub: tạo Personal Access Token (PAT) hoặc SSH key; token cần `repo` scope nếu repo private and/or automation sẽ push.
 
-**1) Secrets cần chuẩn bị**
-- `github-credentials` trong namespace `flux-system`: chứa PAT hoặc SSH private key (GitRepository trong `gotk-sync.yaml` tham chiếu tới secret này).
-- Registry credentials (nếu image private): tạo `docker-registry` secret trong namespace ứng dụng (`prod`, `staging`, ...).
+3) Kiểm tra Terraform trong repo
+- Thư mục: `aws-failover-zero-downtime/infra/terraform` (files: `backend.tf`, `main.tf`, `variables.tf`, `outputs.tf`). Mở `backend.tf` để xác định S3 bucket/DynamoDB table nếu dùng remote state.
+- Tìm biến bắt buộc trong `variables.tf`. Ví dụ thường có: `cluster_name`, `region`, `node_instance_type`, `vpc_id` hoặc `s3_backend_bucket`.
 
-Ví dụ tạo secret PAT (HTTPS):
+4) Chạy Terraform (an toàn)
+- Chuẩn bị backend config (nếu backend yêu cầu):
+```powershell
+cd aws-failover-zero-downtime/infra/terraform
+terraform init -backend-config="bucket=<S3_BUCKET>" -backend-config="region=<REGION>" -backend-config="key=path/to/terraform.tfstate"
+terraform validate
+terraform plan -out=tfplan
+terraform apply tfplan
+```
+- Nếu dùng local state thì bỏ `-backend-config`.
+- Sau `apply`, kiểm tra outputs với `terraform output -json` để lấy `cluster_name` hoặc endpoint.
+
+5) Lấy kubeconfig cho cluster
+- Ví dụ EKS:
+```bash
+aws eks update-kubeconfig --name <cluster-name> --region <region>
+kubectl get nodes
+```
+- Đảm bảo `kubectl get nodes` trả về node(s).
+
+6) Tạo secrets cần thiết (chi tiết)
+- Namespace `flux-system`:
 ```bash
 kubectl create namespace flux-system
+```
+- Git (HTTPS PAT) — secret đọc/ghi (nếu ImageUpdateAutomation push):
+```bash
 kubectl -n flux-system create secret generic github-credentials \
   --from-literal=username=git \
   --from-literal=password=<PERSONAL_ACCESS_TOKEN>
 ```
-
-Ví dụ secret registry (GHCR/private):
+- Git (SSH key) — tạo từ private key file và known_hosts:
+```bash
+kubectl -n flux-system create secret generic github-ssh \
+  --from-file=identity=./id_rsa \
+  --from-file=known_hosts=./known_hosts
+```
+- Registry (private image) — docker-registry secret trong namespace ứng dụng:
 ```bash
 kubectl -n prod create secret docker-registry regcred \
   --docker-server=ghcr.io \
@@ -32,16 +68,18 @@ kubectl -n prod create secret docker-registry regcred \
   --docker-password=<TOKEN> \
   --docker-email=you@example.com
 ```
+- Bảo mật: lưu PAT/keys trong vault nếu có; cân nhắc dùng sealed-secrets hoặc ExternalSecrets.
 
-**2) Cài Flux controllers**
-- Cài CLI (tùy chọn) và controllers:
+7) Cài Flux controllers
+- Cách nhanh với CLI:
 ```bash
 curl -s https://fluxcd.io/install.sh | sudo bash
 flux install
 ```
+- `flux install` sẽ tạo CRDs và controller trong namespace `flux-system`.
 
-**3) Triển khai manifests Flux trong repo**
-- Option A — `flux bootstrap` (CLI sẽ tạo các resource và có thể push config):
+8) Bootstrap repo Flux (2 cách)
+- Option A — `flux bootstrap github` (CLI tự tạo GitRepository CR, optionally push kustomize files):
 ```bash
 flux bootstrap github \
   --owner=YOUR_ORG \
@@ -50,28 +88,35 @@ flux bootstrap github \
   --path=deploy/flux-system \
   --personal
 ```
-- Option B — Nếu controllers đã cài, apply trực tiếp manifests trong repo:
+- Option B — Nếu đã chuẩn bị `deploy/flux-system` trong repo, apply trực tiếp:
 ```bash
 kubectl apply -k deploy/flux-system
 ```
+- Lưu ý: nếu `GitRepository` CR tham chiếu tới `github-credentials`, tạo secret trước khi apply.
 
-**4) Định nghĩa Kustomization & flow**
-- `gotk-sync.yaml` tạo `GitRepository` trỏ tới repo chính và Kustomization CRs cho từng overlay:
-  - `catalog-test` → `./deploy/services/catalog/overlays/test`
-  - `catalog-staging` → `./deploy/services/catalog/overlays/staging` (có `dependsOn: catalog-test`)
-  - `catalog-prod` → `./deploy/services/catalog/overlays/prod` (có `dependsOn: catalog-staging`)
-- `prune: true` và `wait: true` được bật để Flux tidy up và đảm bảo apply hoàn tất.
+9) Giải thích `gotk-sync.yaml` (Flux Kustomization mẫu)
+- `GitRepository` (source.toolkit.fluxcd.io/v1beta2): trỏ tới URL repo, branch, interval, secretRef.
+- `Kustomization` (kustomize.toolkit.fluxcd.io/v1):
+  - `sourceRef`: liên kết tới `GitRepository` source.
+  - `path`: đường dẫn tới overlay trong repo (`./deploy/services/catalog/overlays/test`).
+  - `prune: true`: Flux sẽ xóa resources không còn trong manifests.
+  - `wait: true`, `timeout`: chờ apply hoàn tất.
+  - `dependsOn`: cho phép tạo chain promotion (test -> staging -> prod).
 
-**5) Image automation**
-- Các CR `ImageRepository`, `ImagePolicy` và `ImageUpdateAutomation` cấu hình detection và auto-bump tag/digest. Automation sẽ update files trong path (Setters/strategy) và push commit nếu token cho phép.
-- Kiểm tra config: [deploy/flux-system/catalog-image-automation.yaml](../deploy/flux-system/catalog-image-automation.yaml)
+10) Image Toolkit (chi tiết)
+- Các CRs liên quan:
+  - `ImageRepository`: nơi Flux quét tags/digests.
+  - `ImagePolicy`: filter tags/digest và policy selection.
+  - `ImageUpdateAutomation`: rule để update files (Setters, Replace, etc.) và commit vào git.
+- Chiến lược update: `strategy: Setters` dùng kustomize vars/setters (hoặc `Replace` cho text patch). Hãy bảo đảm overlays có chỗ để Flux update (ví dụ `kustomization.yaml` chứa `images` mục với `newTag` hoặc placeholder comment for $imagepolicy).
+- Nếu automation sẽ push, token trong `github-credentials` phải có quyền push.
 
-**6) Kiểm tra & thao tác thường dùng**
-- Kiểm tra sources git:
+11) Kiểm tra & reconcile thủ công
+- Xem Git sources:
 ```bash
 flux get sources git -n flux-system
 ```
-- Kiểm tra kustomizations:
+- Xem Kustomizations:
 ```bash
 flux get kustomizations -n flux-system
 ```
@@ -80,16 +125,36 @@ flux get kustomizations -n flux-system
 flux reconcile source git aws-retail-store-sample-app -n flux-system
 flux reconcile kustomization catalog-test -n flux-system
 ```
+- Kiểm tra Image CRs bằng `kubectl`:
+```bash
+kubectl -n flux-system get imagerepositories,imagepolicies,imageupdateautomations
+```
 
-**7) Lưu ý vận hành**
-- Token/SSH cần quyền phù hợp: read-only nếu chỉ sync, read+write nếu automation push commit.
-- Tạo secrets trước khi apply `GitRepository` CR nếu CR tham chiếu secret.
-- Thử chạy trên `test` trước khi bật automation cho `staging`/`prod`.
+12) Troubleshooting phổ biến
+- `Kustomization` stuck: kiểm tra `kubectl -n flux-system describe kustomization <name>` và sự kiện.
+- Git auth error: kiểm tra secret tên đúng và nội dung token/SSH key.
+- Image automation không update: kiểm tra `ImagePolicy` filterTags pattern và interval; kiểm tra quyền push.
+- Logs: `kubectl -n flux-system logs deployment/kustomize-controller` và `source-controller`, `image-automation-controller`.
 
-**8) Checklist ngắn trước khi bật auto-update**
-- [ ] Token Git có quyền push nếu dùng ImageUpdateAutomation.
-- [ ] Secrets registry đã có trong namespace ứng dụng.
-- [ ] Format overlays tương thích với chiến lược update (Setters/patches).
+13) Promotion flow thực tế
+- `catalog-test` apply overlay `test`.
+- Khi `catalog-test` thành công, `catalog-staging` (dependsOn: `catalog-test`) sẽ reconcile và apply overlay `staging`.
+- Tương tự cho `catalog-prod`.
+
+14) Checklist trước khi bật auto-update
+- Token Git có quyền push nếu ImageUpdateAutomation cần commit.
+- Secrets đã được tạo trong `flux-system` trước khi apply `GitRepository` CR.
+- Overlays có cấu trúc phù hợp cho chiến lược update (ví dụ `images` entries trong `kustomization.yaml`).
+
+15) Tài liệu & lệnh tham khảo nhanh
+- Bootstrap (CLI): `flux bootstrap github --owner=... --repository=... --path=deploy/flux-system`
+- Reconcile: `flux reconcile kustomization <name> -n flux-system`
+- Xem resources Flux: `flux get all -n flux-system`
 
 ---
-File này được tạo tự động từ phân tích repo; nếu muốn, tôi có thể cập nhật `QUICK_START.md` hoặc thêm hướng dẫn tạo secrets tự động.
+Nếu bạn muốn, tôi có thể:
+- Cập nhật `QUICK_START.md` với các lệnh rút gọn.
+- Tạo script PowerShell để chạy `terraform init/plan/apply` an toàn với backend-config placeholders.
+- Tạo sẵn `kubectl` commands để tạo mọi secret cần thiết cho repo này.
+
+File này đã được mở rộng với hướng dẫn chi tiết; cho tôi biết nếu cần thêm đoạn ví dụ cụ thể cho `backend.tf` hoặc template `ImageUpdateAutomation`.

@@ -8,6 +8,8 @@ This repository now uses a Kustomize layout under `deploy/`:
 - `deploy/clusters/prod` contains the production overlay.
 - `deploy/flux-system` contains Flux image automation resources for the prod image stream.
 
+See [docs/flux-role-and-workflow.md](docs/flux-role-and-workflow.md) for a short explanation of Flux's role in this project and how it relates to the current GitHub Actions deploy flow.
+
 The prod overlay is annotated for Flux image updates so the rendered workload can be pinned by digest instead of only by tag.
 
 Apply an environment with:

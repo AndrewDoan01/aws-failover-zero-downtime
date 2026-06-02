@@ -1,0 +1,59 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageUpdateAutomation
+metadata:
+  name: catalog-test
+  namespace: flux-system
+spec:
+  interval: 15m
+  sourceRef:
+    kind: GitRepository
+    name: aws-retail-store-sample-app
+  git:
+    commit:
+      author:
+        email: flux-system@fluxcd.io
+        name: Flux Automation
+      messageTemplate: "chore: update catalog test image"
+  update:
+    path: ./deploy/clusters/test
+    strategy: Setters
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageUpdateAutomation
+metadata:
+  name: catalog-staging
+  namespace: flux-system
+spec:
+  interval: 15m
+  sourceRef:
+    kind: GitRepository
+    name: aws-retail-store-sample-app
+  git:
+    commit:
+      author:
+        email: flux-system@fluxcd.io
+        name: Flux Automation
+      messageTemplate: "chore: update catalog staging image"
+  update:
+    path: ./deploy/clusters/staging
+    strategy: Setters
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageUpdateAutomation
+metadata:
+  name: catalog-prod
+  namespace: flux-system
+spec:
+  interval: 1h
+  sourceRef:
+    kind: GitRepository
+    name: aws-retail-store-sample-app
+  git:
+    commit:
+      author:
+        email: flux-system@fluxcd.io
+        name: Flux Automation
+      messageTemplate: "chore: update catalog prod image"
+  update:
+    path: ./deploy/clusters/prod
+    strategy: Setters

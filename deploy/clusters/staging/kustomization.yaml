@@ -4,11 +4,11 @@ kind: Kustomization
 namespace: retail-store-sample-staging
 
 resources:
+  - namespace.yaml
   - ../../base
 
 images:
-  - name: ghcr.io/example/retail-store-sample-app
-    newName: ghcr.io/example/retail-store-sample-app
+  - name: aws-retail-store-sample-app
     newTag: staging
 
 patches:

@@ -25,6 +25,12 @@ variable "endpoint_public_access" {
   default     = true
 }
 
+variable "access_entries" {
+  description = "Map of EKS access entries to create for the cluster."
+  type        = any
+  default     = {}
+}
+
 variable "node_group_name" {
   description = "Name of the managed node group."
   type        = string

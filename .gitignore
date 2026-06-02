@@ -33,3 +33,4 @@ accesskey.csv
 
 # lock state file
 .terraform.lock.hcl
+docs

@@ -161,6 +161,12 @@ variable "eks_primary_region_cluster_name" {
   default     = "eks-ap-southeast-1"
 }
 
+variable "eks_admin_principal_arn" {
+  description = "IAM principal ARN to grant EKS cluster admin access. Defaults to the identity running Terraform when empty."
+  type        = string
+  default     = null
+}
+
 variable "enable_secondary_cluster" {
   description = "Whether passive DR cluster naming and grouping are enabled."
   type        = bool
@@ -236,7 +242,7 @@ variable "create_cluster_resource_groups" {
 variable "enable_monitoring" {
   description = "Whether to create Prometheus and Grafana monitoring workspaces."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "monitoring_alarm_topic_name" {

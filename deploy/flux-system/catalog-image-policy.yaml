@@ -1,0 +1,45 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: catalog-test
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: catalog
+  filterTags:
+    pattern: "^test-.*$"
+  policy:
+    alphabetical:
+      order: desc
+  digestReflectionPolicy: IfNotPresent
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: catalog-staging
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: catalog
+  filterTags:
+    pattern: "^staging-.*$"
+  policy:
+    alphabetical:
+      order: desc
+  digestReflectionPolicy: IfNotPresent
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: catalog-prod
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: catalog
+  filterTags:
+    pattern: "^prod$"
+  policy:
+    alphabetical:
+      order: asc
+  digestReflectionPolicy: Always
+  interval: 5m

@@ -3,3 +3,6 @@ kind: Kustomization
 
 resources:
   - image-automation.yaml
+  - catalog-image-policy.yaml
+  - catalog-image-automation.yaml
+  - gotk-sync.yaml

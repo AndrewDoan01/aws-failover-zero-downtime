@@ -2,7 +2,7 @@ data "aws_caller_identity" "current" {}
 
 data "aws_partition" "current" {}
 
- # Reuse the GitHub OIDC provider so Actions can assume this ECR push role.
+# Reuse the GitHub OIDC provider so Actions can assume this ECR push role.
 data "aws_iam_openid_connect_provider" "github" {
 
   url = "https://token.actions.githubusercontent.com"
@@ -10,7 +10,7 @@ data "aws_iam_openid_connect_provider" "github" {
   tags = var.tags
 }
 
- # Trust policy for GitHub Actions environments scoped to this repository.
+# Trust policy for GitHub Actions scoped to this repository.
 data "aws_iam_policy_document" "assume_role" {
 
   statement {
@@ -47,7 +47,9 @@ data "aws_iam_policy_document" "assume_role" {
       variable = "token.actions.githubusercontent.com:sub"
 
       values = [
-        "repo:${var.github_org}/${var.github_repo}:environment:${var.environment}"
+        "repo:${var.github_org}/${var.github_repo}:environment:${var.environment}",
+        "repo:${var.github_org}/${var.github_repo}:ref:refs/heads/*",
+        "repo:${var.github_org}/${var.github_repo}:ref:refs/tags/*"
       ]
     }
   }

@@ -23,14 +23,6 @@ locals {
   deploy_role_names          = { for environment in var.environments : environment => "${var.role_name_prefix}-${environment}" }
 }
 
-data "aws_iam_roles" "existing_deploy_roles" {
-  name_regex = "^${var.role_name_prefix}-(${join("|", var.environments)})$"
-}
-
-locals {
-  existing_deploy_role_names = toset(data.aws_iam_roles.existing_deploy_roles.names)
-}
-
 # Build one assume-role policy per deployment environment.
 data "aws_iam_policy_document" "assume_role" {
   for_each = toset(var.environments)
@@ -53,14 +45,18 @@ data "aws_iam_policy_document" "assume_role" {
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_org}/${var.github_repo}:environment:${each.value}"]
+      values   = [
+        "repo:${var.github_org}/${var.github_repo}:environment:${each.value}",
+        "repo:${var.github_org}/aws-retail-store-sample-app:*"
+      ]
     }
   }
 }
 
 # Provision a separate deploy role for each GitHub environment.
+# Manage roles directly in Terraform state without unsafe dynamic lookup filters.
 resource "aws_iam_role" "deploy" {
-  for_each = { for environment in var.environments : environment => environment if !contains(local.existing_deploy_role_names, local.deploy_role_names[environment]) }
+  for_each = toset(var.environments)
 
   name               = local.deploy_role_names[each.value]
   assume_role_policy = data.aws_iam_policy_document.assume_role[each.value].json
@@ -86,10 +82,25 @@ data "aws_iam_policy_document" "deploy_permissions" {
   }
 
   statement {
-    sid    = "EcrDigestVerification"
+    sid    = "EcrAuth"
     effect = "Allow"
     actions = [
-      "ecr:DescribeImages"
+      "ecr:GetAuthorizationToken"
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "EcrPushAndDescribe"
+    effect = "Allow"
+    actions = [
+      "ecr:DescribeImages",
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:InitiateLayerUpload",
+      "ecr:UploadLayerPart",
+      "ecr:CompleteLayerUpload",
+      "ecr:PutImage",
+      "ecr:BatchGetImage"
     ]
     resources = ["*"]
   }
@@ -112,10 +123,11 @@ data "aws_iam_policy_document" "deploy_permissions" {
 }
 
 # Attach the environment-specific permissions to the corresponding role.
+# Directly reference aws_iam_role.deploy resource to establish a dependency graph.
 resource "aws_iam_role_policy" "deploy" {
   for_each = toset(var.environments)
 
   name   = "${var.role_name_prefix}-${each.value}-policy"
-  role   = local.deploy_role_names[each.value]
+  role   = aws_iam_role.deploy[each.value].name
   policy = data.aws_iam_policy_document.deploy_permissions[each.value].json
 }

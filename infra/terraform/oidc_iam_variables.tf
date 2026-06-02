@@ -13,7 +13,7 @@ variable "github_org" {
 variable "github_repo" {
   description = "GitHub repository name used in OIDC subject condition."
   type        = string
-  default     = "aws-ha-zero-downtime"
+  default     = "aws-failover-zero-downtime"
 }
 
 variable "oidc_role_name_prefix" {

@@ -6,8 +6,8 @@ resources:
   - ../../base
 images:
   - name: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app
-    newTag: prod-v1.0.2 # {"$imagepolicy": "flux-system:catalog-prod:tag"}
-    digest: "sha256:d14496d0e6875a7e01cb01bfe8839907543c6cee33cc650d594c66fb61359d57" # {"$imagepolicy": "flux-system:catalog-prod:digest"}
+    newTag: prod-v1.0.1 # {"$imagepolicy": "flux-system:catalog-prod:tag"}
+    digest: "sha256:8bce809090c0f4c9d47559eb1a59e16eb388d5519567c21973cae9aa08e3ab6e" # {"$imagepolicy": "flux-system:catalog-prod:digest"}
 patches:
   - path: deployment-patch.yaml
   - path: configmap-patch.yaml

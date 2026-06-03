@@ -9,7 +9,7 @@ resources:
 
 images:
   - name: aws-retail-store-sample-app
-    newTag: staging
+    newTag: staging # {"$imagepolicy": "flux-system:catalog-staging:tag"}
 
 patches:
   - path: deployment-patch.yaml

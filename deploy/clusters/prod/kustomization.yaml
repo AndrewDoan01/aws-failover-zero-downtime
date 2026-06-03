@@ -9,8 +9,8 @@ resources:
 
 images:
   - name: aws-retail-store-sample-app
-    newTag: prod # {"$imagepolicy": "flux-system:retail-store-sample-app-prod:tag"}
-    digest: "" # {"$imagepolicy": "flux-system:retail-store-sample-app-prod:digest"}
+    newTag: prod # {"$imagepolicy": "flux-system:catalog-prod:tag"}
+    digest: "" # {"$imagepolicy": "flux-system:catalog-prod:digest"}
 
 patches:
   - path: deployment-patch.yaml

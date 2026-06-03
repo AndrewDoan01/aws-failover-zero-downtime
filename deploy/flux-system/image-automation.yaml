@@ -8,6 +8,7 @@ spec:
   interval: 5m
   secretRef:
     name: ecr-creds
+  provider: aws
 ---
 apiVersion: image.toolkit.fluxcd.io/v1beta2
 kind: ImagePolicy

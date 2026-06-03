@@ -8,8 +8,8 @@ resources:
   - ../../base
 
 images:
-  - name: aws-retail-store-sample-app
-    newTag: prod # {"$imagepolicy": "flux-system:catalog-prod:tag"}
+  - name: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app
+    newTag: prod-v1.0.0 # {"$imagepolicy": "flux-system:catalog-prod:tag"}
     digest: "" # {"$imagepolicy": "flux-system:catalog-prod:digest"}
 
 patches:

@@ -58,7 +58,7 @@ variable "node_min_size" {
 variable "node_max_size" {
   description = "Maximum number of nodes."
   type        = number
-  default     = 3
+  default     = 6
 }
 
 variable "tags" {

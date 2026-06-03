@@ -8,8 +8,8 @@ resources:
   - ../../base
 
 images:
-  - name: aws-retail-store-sample-app
-    newTag: staging # {"$imagepolicy": "flux-system:catalog-staging:tag"}
+  - name: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app
+    newTag: staging-v1.0.0 # {"$imagepolicy": "flux-system:catalog-staging:tag"}
 
 patches:
   - path: deployment-patch.yaml

@@ -21,7 +21,7 @@ module "eks" {
   subnet_ids = var.subnet_ids
 
   eks_managed_node_group_defaults = {
-    ami_type       = "AL2_x86_64"
+    ami_type       = "AL2023_x86_64"
     instance_types = var.node_instance_types
   }
 

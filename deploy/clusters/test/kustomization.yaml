@@ -6,7 +6,7 @@ resources:
   - ../../base
 images:
   - name: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app
-    newTag: test-v1.0.2 # {"$imagepolicy": "flux-system:catalog-test:tag"}
+    newTag: test-v1.0.1 # {"$imagepolicy": "flux-system:catalog-test:tag"}
 patches:
   - path: deployment-patch.yaml
   - path: configmap-patch.yaml

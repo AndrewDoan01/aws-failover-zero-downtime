@@ -6,6 +6,7 @@ metadata:
 spec:
   image: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app
   interval: 5m
+  provider: aws
 ---
 apiVersion: image.toolkit.fluxcd.io/v1beta2
 kind: ImagePolicy

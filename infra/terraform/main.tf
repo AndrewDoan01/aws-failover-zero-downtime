@@ -533,6 +533,46 @@ module "ecr" {
       tags = merge(local.base_tags, {
         Service = "ecr"
       })
+    },
+    {
+      name                 = "aws-retail-store-sample-app-catalog"
+      image_tag_mutability = "IMMUTABLE"
+      scan_on_push         = true
+      tags = merge(local.base_tags, {
+        Service = "ecr"
+      })
+    },
+    {
+      name                 = "aws-retail-store-sample-app-cart"
+      image_tag_mutability = "IMMUTABLE"
+      scan_on_push         = true
+      tags = merge(local.base_tags, {
+        Service = "ecr"
+      })
+    },
+    {
+      name                 = "aws-retail-store-sample-app-checkout"
+      image_tag_mutability = "IMMUTABLE"
+      scan_on_push         = true
+      tags = merge(local.base_tags, {
+        Service = "ecr"
+      })
+    },
+    {
+      name                 = "aws-retail-store-sample-app-orders"
+      image_tag_mutability = "IMMUTABLE"
+      scan_on_push         = true
+      tags = merge(local.base_tags, {
+        Service = "ecr"
+      })
+    },
+    {
+      name                 = "aws-retail-store-sample-app-ui"
+      image_tag_mutability = "IMMUTABLE"
+      scan_on_push         = true
+      tags = merge(local.base_tags, {
+        Service = "ecr"
+      })
     }
   ]
 
@@ -540,17 +580,12 @@ module "ecr" {
 }
 
 module "github_ecr_role" {
-
   source = "./modules/oidc_ecr_role"
 
+  github_org      = local.github_org
+  github_repo     = local.github_app_repo
+  role_name       = "${var.project_name}-github-ecr-role"
+  repository_arns = values(module.ecr.repository_arns)
 
-  github_org  = "AndrewDoan01"
-  github_repo = "aws-retail-store-sample-app"
-
-  environment = "dev"
-
-  role_name = "github-actions-ecr-dev"
-
-  repository_arns = [module.ecr.repository_arns["aws-retail-store-sample-app"]]
-
+  tags = local.base_tags
 }

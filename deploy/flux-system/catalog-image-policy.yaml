@@ -7,10 +7,11 @@ spec:
   imageRepositoryRef:
     name: retail-store-sample-app
   filterTags:
-    pattern: "^test-.*$"
+    pattern: '^test-v(?P<version>[0-9]+\.[0-9]+\.[0-9]+.*)$'
+    extract: '$version'
   policy:
-    alphabetical:
-      order: desc
+    semver:
+      range: '>=1.0.0'
   digestReflectionPolicy: IfNotPresent
 ---
 apiVersion: image.toolkit.fluxcd.io/v1beta2
@@ -22,10 +23,11 @@ spec:
   imageRepositoryRef:
     name: retail-store-sample-app
   filterTags:
-    pattern: "^staging-.*$"
+    pattern: '^staging-v(?P<version>[0-9]+\.[0-9]+\.[0-9]+.*)$'
+    extract: '$version'
   policy:
-    alphabetical:
-      order: desc
+    semver:
+      range: '>=1.0.0'
   digestReflectionPolicy: IfNotPresent
 ---
 apiVersion: image.toolkit.fluxcd.io/v1beta2
@@ -37,9 +39,10 @@ spec:
   imageRepositoryRef:
     name: retail-store-sample-app
   filterTags:
-    pattern: "^prod-.*$"
+    pattern: '^prod-v(?P<version>[0-9]+\.[0-9]+\.[0-9]+.*)$'
+    extract: '$version'
   policy:
-    alphabetical:
-      order: desc
+    semver:
+      range: '>=1.0.0'
   digestReflectionPolicy: Always
   interval: 5m

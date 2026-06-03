@@ -19,10 +19,10 @@ spec:
   imageRepositoryRef:
     name: retail-store-sample-app
   filterTags:
-    pattern: "^prod$"
+    pattern: "^prod-.*$"
   policy:
     alphabetical:
-      order: asc
+      order: desc
   digestReflectionPolicy: Always
   interval: 5m
 ---

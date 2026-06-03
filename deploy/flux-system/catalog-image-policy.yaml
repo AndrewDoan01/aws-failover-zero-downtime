@@ -5,7 +5,7 @@ metadata:
   namespace: flux-system
 spec:
   imageRepositoryRef:
-    name: catalog
+    name: retail-store-sample-app
   filterTags:
     pattern: "^test-.*$"
   policy:
@@ -20,7 +20,7 @@ metadata:
   namespace: flux-system
 spec:
   imageRepositoryRef:
-    name: catalog
+    name: retail-store-sample-app
   filterTags:
     pattern: "^staging-.*$"
   policy:
@@ -35,11 +35,11 @@ metadata:
   namespace: flux-system
 spec:
   imageRepositoryRef:
-    name: catalog
+    name: retail-store-sample-app
   filterTags:
-    pattern: "^prod$"
+    pattern: "^prod-.*$"
   policy:
     alphabetical:
-      order: asc
+      order: desc
   digestReflectionPolicy: Always
   interval: 5m

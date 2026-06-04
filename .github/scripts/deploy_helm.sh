@@ -28,6 +28,7 @@ for SERVICE in "${SERVICES[@]}"; do
   CHART_VERSION="$(jq -r '.chart_version' <<<"${SERVICE}")"
   REPOSITORY="$(jq -r '.image.repository' <<<"${SERVICE}")"
   DIGEST="$(jq -r '.image.digest' <<<"${SERVICE}")"
+  RELEASE_ID="$(jq -r '.release_id' <<<"${SERVICE}")"
 
   kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
 
@@ -42,6 +43,7 @@ for SERVICE in "${SERVICES[@]}"; do
     --namespace "${NAMESPACE}"
     --version "${CHART_VERSION}"
     --set-string "image.repository=${REPOSITORY}"
+    --set-string "image.tag=${RELEASE_ID}"
     --set-string "image.digest=${DIGEST}"
   )
 
@@ -63,6 +65,7 @@ for SERVICE in "${SERVICES[@]}"; do
     --wait
     --timeout 5m
     --set-string "image.repository=${REPOSITORY}"
+    --set-string "image.tag=${RELEASE_ID}"
     --set-string "image.digest=${DIGEST}"
   )
 

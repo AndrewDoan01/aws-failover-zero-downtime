@@ -13,11 +13,9 @@
       },
       "release_id": "test-v1.0.3",
       "app_commit_sha": "ba387f6",
-      "values_files": [
-        "values.yaml"
-      ],
+      "values_files": [],
       "smoke": {
-        "deployment": "cart"
+        "deployment": "cart-carts"
       }
     },
     {
@@ -32,9 +30,7 @@
       },
       "release_id": "test-v1.0.3",
       "app_commit_sha": "ba387f6",
-      "values_files": [
-        "values.yaml"
-      ],
+      "values_files": [],
       "smoke": {
         "deployment": "catalog"
       }
@@ -51,9 +47,7 @@
       },
       "release_id": "test-v1.0.3",
       "app_commit_sha": "ba387f6",
-      "values_files": [
-        "values.yaml"
-      ],
+      "values_files": [],
       "smoke": {
         "deployment": "checkout"
       }
@@ -70,9 +64,7 @@
       },
       "release_id": "test-v1.0.3",
       "app_commit_sha": "ba387f6",
-      "values_files": [
-        "values.yaml"
-      ],
+      "values_files": [],
       "smoke": {
         "deployment": "orders"
       }
@@ -90,7 +82,7 @@
       "release_id": "test-v1.0.3",
       "app_commit_sha": "ba387f6",
       "values_files": [
-        "values.yaml"
+        "deploy/values/ui-test.yaml"
       ],
       "smoke": {
         "deployment": "ui"

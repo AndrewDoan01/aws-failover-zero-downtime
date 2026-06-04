@@ -1,0 +1,6 @@
+app:
+  endpoints:
+    catalog: http://catalog:80
+    carts: http://cart-carts:80
+    orders: http://orders:80
+    checkout: http://checkout:80

@@ -329,7 +329,7 @@ resource "aws_lb" "secondary" {
   count = var.enable_secondary_cluster ? 1 : 0
 
   provider           = aws.secondary
-  name               = "${var.project_name}-secondary-alb"
+  name               = "NT114-secondary-alb"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.secondary_alb[0].id]
@@ -349,7 +349,7 @@ resource "aws_lb_target_group" "secondary" {
   count = var.enable_secondary_cluster ? 1 : 0
 
   provider    = aws.secondary
-  name        = "${var.project_name}-secondary-tg"
+  name        = "NT114-secondary-tg"
   port        = 80
   protocol    = "HTTP"
   vpc_id      = module.secondary_vpc[0].vpc_id
@@ -580,12 +580,17 @@ module "ecr" {
 }
 
 module "github_ecr_role" {
+
   source = "./modules/oidc_ecr_role"
 
-  github_org      = local.github_org
-  github_repo     = local.github_app_repo
-  role_name       = "${var.project_name}-github-ecr-role"
+
+  github_org  = "AndrewDoan01"
+  github_repo = "aws-retail-store-sample-app"
+
+  environment = "dev"
+
+  role_name = "github-actions-ecr-dev"
+
   repository_arns = values(module.ecr.repository_arns)
 
-  tags = local.base_tags
 }

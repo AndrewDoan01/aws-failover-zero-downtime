@@ -32,10 +32,23 @@ locals {
 
   eks_admin_principal_arn = coalesce(var.eks_admin_principal_arn, data.aws_caller_identity.current.arn)
 
-  primary_eks_access_entries = {
-    terraform-admin = {
-      principal_arn = local.eks_admin_principal_arn
+  primary_eks_access_entries = merge(
+    {
+      terraform-admin = {
+        principal_arn = local.eks_admin_principal_arn
 
+        policy_associations = {
+          admin = {
+            policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+            access_scope = {
+              type = "cluster"
+            }
+          }
+        }
+      }
+    },
+    { for env, arn in try(module.oidc_iam[0].role_arns, {}) : "deploy-${env}" => {
+      principal_arn = arn
       policy_associations = {
         admin = {
           policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
@@ -44,8 +57,8 @@ locals {
           }
         }
       }
-    }
-  }
+    }}
+  )
 
   primary_common_tags = merge(local.base_tags, {
     RegionRole = "primary"

@@ -31,7 +31,8 @@ for SERVICE in "${SERVICES[@]}"; do
 
   kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
 
-  PREVIOUS_REVISION="$(helm history "${RELEASE}" -n "${NAMESPACE}" -o json 2>/dev/null | jq -r 'if length > 0 then .[-1].revision else empty end')"
+  PREVIOUS_REVISION="$(helm history "${RELEASE}" -n "${NAMESPACE}" -o json 2>/dev/null || echo "[]")"
+  PREVIOUS_REVISION="$(jq -r 'if length > 0 then .[-1].revision else empty end' <<<"${PREVIOUS_REVISION}" || echo "")"
 
   echo "Rendering manifest for ${NAME}"
   RENDER_ARGS=(

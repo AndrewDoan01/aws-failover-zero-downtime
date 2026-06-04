@@ -170,7 +170,7 @@ variable "eks_admin_principal_arn" {
 variable "enable_secondary_cluster" {
   description = "Whether passive DR cluster naming and grouping are enabled."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "enable_db_failover_automation" {

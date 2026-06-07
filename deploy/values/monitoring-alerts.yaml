@@ -1,0 +1,91 @@
+# deploy/values/monitoring-alerts.yaml
+# Custom PrometheusRule cho retail-store-sample application
+# Repo: aws-failover-zero-downtime
+
+additionalPrometheusRulesMap:
+  retail-store-rules:
+    groups:
+
+      # ── Availability Rules ────────────────────────────────
+      - name: retail-store.availability
+        rules:
+
+          - alert: PodCrashLooping
+            expr: rate(kube_pod_container_status_restarts_total{namespace=~"retail-store.*"}[5m]) * 60 > 1
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Pod crash looping: {{ $labels.pod }}"
+              description: "Pod {{ $labels.pod }} trong namespace {{ $labels.namespace }} đang restart liên tục ({{ $value | humanize }} lần/phút)"
+
+          - alert: PodNotReady
+            expr: kube_pod_status_ready{condition="true", namespace=~"retail-store.*"} == 0
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Pod không sẵn sàng: {{ $labels.pod }}"
+              description: "Pod {{ $labels.pod }} trong namespace {{ $labels.namespace }} không ở trạng thái Ready trong 5 phút"
+
+          - alert: DeploymentReplicasMismatch
+            expr: |
+              kube_deployment_spec_replicas{namespace=~"retail-store.*"}
+                != kube_deployment_status_available_replicas{namespace=~"retail-store.*"}
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Replica mismatch: {{ $labels.deployment }}"
+              description: "Deployment {{ $labels.deployment }} thiếu replica trong 10 phút"
+
+      # ── Resource Usage Rules ──────────────────────────────
+      - name: retail-store.resources
+        rules:
+
+          - alert: ContainerHighMemory
+            expr: |
+              container_memory_working_set_bytes{namespace=~"retail-store.*", container!=""}
+                / container_spec_memory_limit_bytes{namespace=~"retail-store.*", container!=""} > 0.85
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Memory cao: {{ $labels.container }}"
+              description: "Container {{ $labels.container }} dùng {{ $value | humanizePercentage }} memory limit trong 10 phút"
+
+          - alert: ContainerHighCPU
+            expr: |
+              rate(container_cpu_usage_seconds_total{namespace=~"retail-store.*", container!=""}[5m])
+                / (container_spec_cpu_quota{namespace=~"retail-store.*", container!=""}
+                   / container_spec_cpu_period{namespace=~"retail-store.*", container!=""}) > 0.90
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "CPU cao: {{ $labels.container }}"
+              description: "Container {{ $labels.container }} dùng > 90% CPU limit trong 10 phút"
+
+      # ── Failover Detection Rules ──────────────────────────
+      - name: retail-store.failover
+        rules:
+
+          - alert: FailoverDetected
+            expr: |
+              changes(kube_pod_status_phase{namespace=~"retail-store.*", phase="Running"}[10m]) > 5
+            for: 0m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Có thể đang xảy ra failover"
+              description: "Số lượng pod thay đổi bất thường (> 5 lần) trong 10 phút — kiểm tra ngay"
+
+          - alert: HighPodRestartRate
+            expr: |
+              sum(rate(kube_pod_container_status_restarts_total{namespace=~"retail-store.*"}[15m])) by (namespace) * 60 > 3
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Restart rate cao trong namespace {{ $labels.namespace }}"
+              description: "Tổng restart rate của namespace {{ $labels.namespace }} vượt ngưỡng 3 lần/phút — khả năng cao đang có incident"

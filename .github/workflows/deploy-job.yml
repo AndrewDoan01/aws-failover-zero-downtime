@@ -30,6 +30,12 @@ on:
     secrets:
       aws_role_arn:
         required: true
+      discord_webhook_url:
+        required: false
+        description: "Discord webhook URL for AlertManager notifications"
+      grafana_admin_password:
+        required: false
+        description: "Grafana admin user password"
 
 jobs:
   deploy:
@@ -105,6 +111,9 @@ jobs:
 
       - name: Render and deploy Helm
         shell: bash
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.discord_webhook_url }}
+          GRAFANA_ADMIN_PASSWORD: ${{ secrets.grafana_admin_password }}
         run: ./.github/scripts/deploy_helm.sh "${{ inputs.environment_name }}"
 
       - name: Smoke test

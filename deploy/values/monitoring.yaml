@@ -1,0 +1,141 @@
+# deploy/values/monitoring.yaml
+# Helm values cho kube-prometheus-stack v68.x
+# Repo: aws-failover-zero-downtime
+
+nameOverride: ""
+fullnameOverride: ""
+
+# ── Prometheus ──────────────────────────────────────────────
+prometheus:
+  enabled: true
+  prometheusSpec:
+    retention: 15d
+    retentionSize: "10GB"
+    # Tự động discover ServiceMonitor/PodMonitor từ mọi namespace
+    # (không bị giới hạn chỉ trong namespace của Helm release)
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+
+# ── Grafana ─────────────────────────────────────────────────
+grafana:
+  enabled: true
+  # Password inject từ env GRAFANA_ADMIN_PASSWORD tại deploy-job.yml
+  # Không hard-code ở đây
+  adminPassword: "${GRAFANA_ADMIN_PASSWORD}"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 300m
+      memory: 512Mi
+  # Tắt persistence để đơn giản hóa lần đầu
+  # Bật lại sau khi stack ổn định (xem monitoring_plan.md - Bước 8)
+  persistence:
+    enabled: false
+  # Ingress tắt, bật sau khi có domain (xem monitoring_plan.md - Bước 7)
+  ingress:
+    enabled: false
+
+# ── AlertManager ─────────────────────────────────────────────
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+  config:
+    global:
+      resolve_timeout: 5m
+
+    # Route tree — điều phối alert đến đúng receiver
+    route:
+      group_by: ['alertname', 'namespace', 'severity']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 12h
+      receiver: 'discord-alerts'
+      routes:
+        # Critical alerts: gửi ngay, repeat mỗi 1h
+        - matchers:
+            - severity="critical"
+          receiver: 'discord-alerts'
+          group_wait: 10s
+          repeat_interval: 1h
+        # Watchdog (heartbeat của Prometheus) → bỏ qua, không spam Discord
+        - matchers:
+            - alertname="Watchdog"
+          receiver: 'null'
+
+    receivers:
+      - name: 'null'
+
+      - name: 'discord-alerts'
+        discord_configs:
+          # webhook_url inject từ env DISCORD_WEBHOOK_URL — KHÔNG hard-code trực tiếp
+          - webhook_url: "${DISCORD_WEBHOOK_URL}"
+            send_resolved: true
+            title: '{{ template "discord.title" . }}'
+            message: '{{ template "discord.message" . }}'
+
+    # Đường dẫn chứa custom template files
+    templates:
+      - '/etc/alertmanager/config/*.tmpl'
+
+  # Discord message template
+  templateFiles:
+    discord.tmpl: |-
+      {{ define "discord.title" -}}
+      {{ if eq .Status "firing" }}🔥{{ else }}✅{{ end }} [{{ .Status | toUpper }}] {{ .GroupLabels.alertname }}
+      {{- end }}
+
+      {{ define "discord.message" -}}
+      **Severity:** {{ .CommonLabels.severity | default "unknown" }}
+      **Namespace:** {{ .CommonLabels.namespace | default "N/A" }}
+      **Environment:** test
+      {{ range .Alerts }}
+      ─────────────────────
+      **Alert:** {{ .Labels.alertname }}
+      **Summary:** {{ .Annotations.summary | default "No summary" }}
+      **Description:** {{ .Annotations.description | default "No description" }}
+      **Started:** {{ .StartsAt.Format "2006-01-02 15:04:05 UTC" }}
+      {{ end }}
+      {{- end }}
+
+# ── Node Exporter ─────────────────────────────────────────────
+# Collect metrics từ mỗi node (CPU, memory, disk, network)
+nodeExporter:
+  enabled: true
+
+# ── Kube State Metrics ────────────────────────────────────────
+# Collect state của K8s objects (deployments, pods, etc.)
+kube-state-metrics:
+  enabled: true
+
+# ── Default Alert Rules ───────────────────────────────────────
+defaultRules:
+  create: true
+  rules:
+    alertmanager: true
+    etcd: false                       # EKS dùng managed etcd, không cần monitor
+    kubeApiserver: true
+    kubelet: true
+    kubePrometheusNodeAlerting: true
+    kubePrometheusNodeRecording: true
+    kubernetesApps: true
+    kubernetesResources: true
+    kubernetesStorage: true
+    node: true
+    prometheus: true

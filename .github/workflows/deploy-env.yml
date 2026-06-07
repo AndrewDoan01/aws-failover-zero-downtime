@@ -68,6 +68,8 @@ jobs:
       eks_cluster_name: ${{ (github.event_name == 'workflow_dispatch' && inputs.target_cluster == 'secondary') && vars['SECONDARY_EKS_CLUSTER_NAME'] || vars['PRIMARY_EKS_CLUSTER_NAME'] }}
     secrets:
       aws_role_arn: ${{ secrets.AWS_ROLE_ARN }}
+      discord_webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      grafana_admin_password: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
 
   deploy-staging:
     needs: detect-changes
@@ -80,7 +82,8 @@ jobs:
       eks_cluster_name: ${{ (github.event_name == 'workflow_dispatch' && inputs.target_cluster == 'secondary') && vars['SECONDARY_EKS_CLUSTER_NAME'] || vars['PRIMARY_EKS_CLUSTER_NAME'] }}
     secrets:
       aws_role_arn: ${{ secrets.AWS_ROLE_ARN }}
-
+      discord_webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      grafana_admin_password: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
   deploy-prod:
     needs: detect-changes
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.environment == 'prod') || (github.event_name == 'push' && needs.detect-changes.outputs.prod == 'true') }}
@@ -94,3 +97,5 @@ jobs:
       change_window_end: ${{ vars.PROD_CHANGE_WINDOW_END_UTC }}
     secrets:
       aws_role_arn: ${{ secrets.AWS_ROLE_ARN }}
+      discord_webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      grafana_admin_password: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}

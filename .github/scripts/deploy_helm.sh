@@ -42,10 +42,16 @@ for SERVICE in "${SERVICES[@]}"; do
     "${CHART}"
     --namespace "${NAMESPACE}"
     --version "${CHART_VERSION}"
-    --set-string "image.repository=${REPOSITORY}"
-    --set-string "image.tag=${RELEASE_ID}"
-    --set-string "image.digest=${DIGEST}"
   )
+
+  # Only pin image for ECR-sourced services; Helm meta-charts manage images internally
+  if [[ "${REPOSITORY}" =~ ^[0-9]{12}\.dkr\.ecr\.[a-z0-9-]+\.amazonaws\.com\/.+ ]]; then
+    RENDER_ARGS+=(
+      --set-string "image.repository=${REPOSITORY}"
+      --set-string "image.tag=${RELEASE_ID}"
+      --set-string "image.digest=${DIGEST}"
+    )
+  fi
 
   while IFS= read -r VALUE_FILE; do
     [[ -z "${VALUE_FILE}" ]] && continue
@@ -64,10 +70,16 @@ for SERVICE in "${SERVICES[@]}"; do
     --version "${CHART_VERSION}"
     --wait
     --timeout 5m
-    --set-string "image.repository=${REPOSITORY}"
-    --set-string "image.tag=${RELEASE_ID}"
-    --set-string "image.digest=${DIGEST}"
   )
+
+  # Only pin image for ECR-sourced services; Helm meta-charts manage images internally
+  if [[ "${REPOSITORY}" =~ ^[0-9]{12}\.dkr\.ecr\.[a-z0-9-]+\.amazonaws\.com\/.+ ]]; then
+    UPGRADE_ARGS+=(
+      --set-string "image.repository=${REPOSITORY}"
+      --set-string "image.tag=${RELEASE_ID}"
+      --set-string "image.digest=${DIGEST}"
+    )
+  fi
 
   while IFS= read -r VALUE_FILE; do
     [[ -z "${VALUE_FILE}" ]] && continue

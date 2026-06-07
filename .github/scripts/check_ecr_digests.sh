@@ -31,8 +31,8 @@ for SERVICE in "${SERVICES[@]}"; do
     REGION="${BASH_REMATCH[2]}"
     REPOSITORY_NAME="${BASH_REMATCH[3]}"
   else
-    echo "Invalid ECR repository format for ${NAME}: ${REPO_URI}"
-    exit 1
+    echo "Skipping ECR digest check for ${NAME}: ${REPO_URI} is not an ECR registry (Helm chart meta-service)"
+    continue
   fi
 
   echo "Checking digest for ${NAME}: ${DIGEST}"

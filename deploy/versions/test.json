@@ -96,7 +96,7 @@
       "chart_version": "68.4.0",
       "image": {
         "repository": "quay.io/prometheus/prometheus",
-        "digest": "sha256:f6db4bbdee73effa4e3a36d4b4c75c3a5e3d4fcff3f8c20a0c2f28c0c25e56b"
+        "digest": "sha256:f6db4bbdee73effa4e3a36d4b4c75c3a5e3d4fcff3f8c20a0c2f28c0c25e56b0"
       },
       "release_id": "test-monitoring-v1.0.0",
       "app_commit_sha": "initial",

@@ -105,7 +105,7 @@
         "deploy/values/monitoring-alerts.yaml"
       ],
       "smoke": {
-        "deployment": "monitoring-kube-prometheus-stack-prometheus"
+        "deployment": "monitoring-grafana"
       }
     }
   ]

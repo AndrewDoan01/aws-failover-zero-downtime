@@ -55,7 +55,8 @@ for SERVICE in "${SERVICES[@]}"; do
 
   while IFS= read -r VALUE_FILE; do
     [[ -z "${VALUE_FILE}" ]] && continue
-    RENDER_ARGS+=(--values "${VALUE_FILE}")
+    envsubst < "${VALUE_FILE}" > ".deploy_state/rendered-${VALUE_FILE##*/}"
+    RENDER_ARGS+=(--values ".deploy_state/rendered-${VALUE_FILE##*/}")
   done < <(jq -r '.values_files[]? // empty' <<<"${SERVICE}")
 
   helm "${RENDER_ARGS[@]}" > ".deploy_state/${ENV_NAME}-${NAME}-rendered.yaml"
@@ -83,7 +84,7 @@ for SERVICE in "${SERVICES[@]}"; do
 
   while IFS= read -r VALUE_FILE; do
     [[ -z "${VALUE_FILE}" ]] && continue
-    UPGRADE_ARGS+=(--values "${VALUE_FILE}")
+    UPGRADE_ARGS+=(--values ".deploy_state/rendered-${VALUE_FILE##*/}")
   done < <(jq -r '.values_files[]? // empty' <<<"${SERVICE}")
 
   helm "${UPGRADE_ARGS[@]}"

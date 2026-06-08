@@ -55,7 +55,7 @@ for SERVICE in "${SERVICES[@]}"; do
 
   while IFS= read -r VALUE_FILE; do
     [[ -z "${VALUE_FILE}" ]] && continue
-    envsubst < "${VALUE_FILE}" > ".deploy_state/rendered-${VALUE_FILE##*/}"
+    envsubst '${GRAFANA_ADMIN_PASSWORD} ${DISCORD_WEBHOOK_URL}' < "${VALUE_FILE}" > ".deploy_state/rendered-${VALUE_FILE##*/}"
     RENDER_ARGS+=(--values ".deploy_state/rendered-${VALUE_FILE##*/}")
   done < <(jq -r '.values_files[]? // empty' <<<"${SERVICE}")
 

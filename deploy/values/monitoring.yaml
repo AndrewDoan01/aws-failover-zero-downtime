@@ -27,6 +27,8 @@ prometheus:
 # ── Grafana ─────────────────────────────────────────────────
 grafana:
   enabled: true
+  deploymentStrategy:
+    type: Recreate
   # Password inject từ env GRAFANA_ADMIN_PASSWORD tại deploy-job.yml
   # Không hard-code ở đây
   adminPassword: "${GRAFANA_ADMIN_PASSWORD}"

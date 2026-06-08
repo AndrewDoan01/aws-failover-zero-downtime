@@ -104,14 +104,14 @@ alertmanager:
       {{- end }}
 
       {{ define "discord.message" -}}
-      **Severity:** {{ .CommonLabels.severity | default "unknown" }}
-      **Namespace:** {{ .CommonLabels.namespace | default "N/A" }}
+      **Severity:** {{ if index .CommonLabels "severity" }}{{ index .CommonLabels "severity" }}{{ else }}unknown{{ end }}
+      **Namespace:** {{ if index .CommonLabels "namespace" }}{{ index .CommonLabels "namespace" }}{{ else }}N/A{{ end }}
       **Environment:** test
       {{ range .Alerts }}
       ─────────────────────
-      **Alert:** {{ .Labels.alertname }}
-      **Summary:** {{ .Annotations.summary | default "No summary" }}
-      **Description:** {{ .Annotations.description | default "No description" }}
+      **Alert:** {{ if index .Labels "alertname" }}{{ index .Labels "alertname" }}{{ else }}unknown{{ end }}
+      **Summary:** {{ if index .Annotations "summary" }}{{ index .Annotations "summary" }}{{ else }}No summary{{ end }}
+      **Description:** {{ if index .Annotations "description" }}{{ index .Annotations "description" }}{{ else }}No description{{ end }}
       **Started:** {{ .StartsAt.Format "2006-01-02 15:04:05 UTC" }}
       {{ end }}
       {{- end }}

@@ -108,3 +108,7 @@ output "route53_secondary_fqdn" {
   description = "Secondary DNS record FQDN."
   value       = try(module.route53[0].secondary_fqdn, null)
 }
+
+output "primary_postgres_endpoint" {
+  value = module.primary_postgres_database.db_instance_endpoint
+}

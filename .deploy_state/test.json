@@ -1,0 +1,32 @@
+[
+  {
+    "name": "cart",
+    "release": "cart",
+    "namespace": "retail-store-sample-test",
+    "previous_revision": "1"
+  },
+  {
+    "name": "catalog",
+    "release": "catalog",
+    "namespace": "retail-store-sample-test",
+    "previous_revision": "1"
+  },
+  {
+    "name": "checkout",
+    "release": "checkout",
+    "namespace": "retail-store-sample-test",
+    "previous_revision": "1"
+  },
+  {
+    "name": "orders",
+    "release": "orders",
+    "namespace": "retail-store-sample-test",
+    "previous_revision": "1"
+  },
+  {
+    "name": "ui",
+    "release": "ui",
+    "namespace": "retail-store-sample-test",
+    "previous_revision": "1"
+  }
+]

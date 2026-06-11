@@ -170,7 +170,7 @@ variable "eks_admin_principal_arn" {
 variable "enable_secondary_cluster" {
   description = "Whether passive DR cluster naming and grouping are enabled."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "enable_db_failover_automation" {
@@ -218,13 +218,13 @@ variable "eks_secondary_region_cluster_name" {
 variable "eks_secondary_node_desired_size" {
   description = "Desired node count for passive secondary EKS cluster."
   type        = number
-  default     = 0
+  default     = 2
 }
 
 variable "eks_secondary_node_min_size" {
   description = "Minimum node count for passive secondary EKS cluster."
   type        = number
-  default     = 0
+  default     = 1
 }
 
 variable "eks_secondary_node_max_size" {

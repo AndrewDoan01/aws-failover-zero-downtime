@@ -607,3 +607,25 @@ module "github_ecr_role" {
   repository_arns = values(module.ecr.repository_arns)
 
 }
+
+module "primary_postgres_database" {
+  source = "./modules/database"
+
+  identifier     = "${var.db_identifier}-postgres"
+  db_name        = "orders"
+  username       = var.db_username
+  db_password    = var.db_password
+  engine         = "postgres"
+  engine_version = "16.1"
+  port           = 5432
+  
+  vpc_id                     = module.primary_vpc.vpc_id
+  subnet_ids                 = module.primary_vpc.private_subnet_ids
+  allowed_cidr_blocks        = var.db_allowed_cidr_blocks
+  allowed_security_group_ids = var.db_allowed_security_group_ids
+
+  tags = merge(local.primary_common_tags, {
+    Service = "database-postgres"
+  })
+}
+

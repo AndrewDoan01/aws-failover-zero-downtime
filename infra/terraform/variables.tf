@@ -230,7 +230,7 @@ variable "eks_secondary_node_min_size" {
 variable "eks_secondary_node_max_size" {
   description = "Maximum node count for passive secondary EKS cluster."
   type        = number
-  default     = 1
+  default     = 4
 }
 
 variable "create_cluster_resource_groups" {
@@ -368,19 +368,19 @@ variable "route53_primary_health_check_fqdn" {
 variable "route53_primary_health_check_port" {
   description = "Primary Route53 health check port."
   type        = number
-  default     = 443
+  default     = 80
 }
 
 variable "route53_primary_health_check_type" {
   description = "Primary Route53 health check type."
   type        = string
-  default     = "HTTPS"
+  default     = "HTTP"
 }
 
 variable "route53_primary_health_check_resource_path" {
   description = "HTTP path checked by Route53 on the primary endpoint."
   type        = string
-  default     = "/health"
+  default     = "/"
 }
 
 variable "route53_primary_health_check_failure_threshold" {
@@ -408,6 +408,66 @@ variable "route53_primary_health_check_search_string" {
 }
 
 variable "route53_primary_health_check_regions" {
+  description = "Optional Route53 health check regions. Leave empty for the default managed regions."
+  type        = list(string)
+  default     = []
+}
+
+variable "route53_secondary_health_check_enabled" {
+  description = "Whether to create the secondary Route53 health check."
+  type        = bool
+  default     = true
+}
+
+variable "route53_secondary_health_check_fqdn" {
+  description = "Health check FQDN for the secondary endpoint. Falls back to the secondary alias name or record target when empty."
+  type        = string
+  default     = ""
+}
+
+variable "route53_secondary_health_check_port" {
+  description = "Secondary Route53 health check port."
+  type        = number
+  default     = 80
+}
+
+variable "route53_secondary_health_check_type" {
+  description = "Secondary Route53 health check type."
+  type        = string
+  default     = "HTTP"
+}
+
+variable "route53_secondary_health_check_resource_path" {
+  description = "HTTP path checked by Route53 on the secondary endpoint."
+  type        = string
+  default     = "/"
+}
+
+variable "route53_secondary_health_check_failure_threshold" {
+  description = "Number of failed checks before Route53 marks the secondary endpoint unhealthy."
+  type        = number
+  default     = 3
+}
+
+variable "route53_secondary_health_check_request_interval" {
+  description = "Seconds between Route53 health check requests."
+  type        = number
+  default     = 30
+}
+
+variable "route53_secondary_health_check_enable_sni" {
+  description = "Whether to enable SNI for the secondary HTTPS health check."
+  type        = bool
+  default     = true
+}
+
+variable "route53_secondary_health_check_search_string" {
+  description = "Optional text that Route53 must find in the health check response body."
+  type        = string
+  default     = ""
+}
+
+variable "route53_secondary_health_check_regions" {
   description = "Optional Route53 health check regions. Leave empty for the default managed regions."
   type        = list(string)
   default     = []

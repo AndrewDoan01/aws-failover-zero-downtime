@@ -512,6 +512,17 @@ module "route53" {
   primary_health_check_search_string     = var.route53_primary_health_check_search_string
   primary_health_check_regions           = var.route53_primary_health_check_regions
 
+  secondary_health_check_enabled           = var.route53_secondary_health_check_enabled
+  secondary_health_check_fqdn              = var.enable_secondary_cluster ? aws_lb.secondary[0].dns_name : ""
+  secondary_health_check_port              = var.route53_secondary_health_check_port
+  secondary_health_check_type              = var.route53_secondary_health_check_type
+  secondary_health_check_resource_path     = var.route53_secondary_health_check_resource_path
+  secondary_health_check_failure_threshold = var.route53_secondary_health_check_failure_threshold
+  secondary_health_check_request_interval  = var.route53_secondary_health_check_request_interval
+  secondary_health_check_enable_sni        = var.route53_secondary_health_check_enable_sni
+  secondary_health_check_search_string     = var.route53_secondary_health_check_search_string
+  secondary_health_check_regions           = var.route53_secondary_health_check_regions
+
   depends_on = [aws_lb.primary]
 }
 
@@ -626,6 +637,26 @@ module "primary_postgres_database" {
 
   tags = merge(local.primary_common_tags, {
     Service = "database-postgres"
+  })
+}
+
+module "secondary_postgres_database" {
+  count = var.enable_secondary_cluster ? 1 : 0
+
+  providers = {
+    aws = aws.secondary
+  }
+
+  source = "./modules/database"
+
+  identifier          = "${var.db_identifier}-postgres-secondary"
+  vpc_id              = module.secondary_vpc[0].vpc_id
+  subnet_ids          = module.secondary_vpc[0].private_subnet_ids
+  replicate_source_db = module.primary_postgres_database.db_instance_arn
+
+  tags = merge(local.secondary_common_tags, {
+    Service      = "database-postgres"
+    DatabaseRole = "read-replica"
   })
 }
 

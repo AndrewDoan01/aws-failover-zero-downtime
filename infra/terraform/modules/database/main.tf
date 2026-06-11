@@ -74,5 +74,11 @@ resource "aws_db_instance" "this" {
   apply_immediately          = true
   auto_minor_version_upgrade = true
 
+  lifecycle {
+    ignore_changes = [
+      replicate_source_db,
+    ]
+  }
+
   tags = var.tags
 }

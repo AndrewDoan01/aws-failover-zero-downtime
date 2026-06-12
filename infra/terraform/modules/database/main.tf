@@ -67,6 +67,7 @@ resource "aws_db_instance" "this" {
   multi_az                   = var.replicate_source_db == null ? var.multi_az : false
   publicly_accessible        = var.publicly_accessible
   storage_encrypted          = true
+  kms_key_id                 = var.kms_key_id
   backup_retention_period    = var.replicate_source_db == null ? var.backup_retention_period : 3
   skip_final_snapshot        = var.skip_final_snapshot
   final_snapshot_identifier  = var.skip_final_snapshot ? null : "${var.identifier}-final"

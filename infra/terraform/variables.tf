@@ -272,7 +272,7 @@ variable "monitoring_grafana_description" {
 variable "enable_route53" {
   description = "Whether to create Route53 records."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "route53_zone_name" {
@@ -296,7 +296,7 @@ variable "route53_record_name" {
 variable "route53_record_type" {
   description = "DNS record type (CNAME, A, AAAA). Use A/AAAA when alias is enabled."
   type        = string
-  default     = "CNAME"
+  default     = "A"
 }
 
 variable "route53_primary_record" {

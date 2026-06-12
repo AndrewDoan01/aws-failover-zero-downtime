@@ -7,15 +7,14 @@ terraform {
       version = "~> 5.0"
     }
 
-    # Temporary: kubernetes provider is disabled until EKS is deployed.
-    # kubernetes = {
-    #   source  = "hashicorp/kubernetes"
-    #   version = "~> 2.30"
-    # }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.30"
+    }
 
-    # helm = {
-    # source  = "hashicorp/helm"
-    # version = "~> 2.15"
-    # }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.15"
+    }
   }
 }

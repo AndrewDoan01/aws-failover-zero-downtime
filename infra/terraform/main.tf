@@ -198,7 +198,7 @@ resource "aws_lb_target_group" "primary" {
     unhealthy_threshold = 2
     timeout             = 3
     interval            = 30
-    path                = "/"
+    path                = "/health"
     matcher             = "200-399"
   }
 
@@ -251,6 +251,7 @@ module "secondary_eks" {
   cluster_name           = var.eks_secondary_region_cluster_name
   vpc_id                 = module.secondary_vpc[0].vpc_id
   subnet_ids             = module.secondary_vpc[0].private_subnet_ids
+  access_entries         = local.primary_eks_access_entries
   node_desired_size      = var.eks_secondary_node_desired_size
   node_min_size          = var.eks_secondary_node_min_size
   node_max_size          = var.eks_secondary_node_max_size
@@ -258,6 +259,7 @@ module "secondary_eks" {
 
   tags = local.secondary_cluster_tags
 }
+
 
 resource "aws_kms_key" "secondary_db" {
   count                   = var.enable_secondary_cluster ? 1 : 0
@@ -384,7 +386,7 @@ resource "aws_lb_target_group" "secondary" {
     unhealthy_threshold = 2
     timeout             = 3
     interval            = 30
-    path                = "/"
+    path                = "/health"
     matcher             = "200-399"
   }
 
@@ -673,4 +675,27 @@ module "secondary_postgres_database" {
     DatabaseRole = "read-replica"
   })
 }
+
+# Allow primary ALB to communicate with primary EKS node groups on all TCP ports
+resource "aws_security_group_rule" "primary_alb_to_nodes" {
+  type                     = "ingress"
+  from_port                = 0
+  to_port                  = 65535
+  protocol                 = "tcp"
+  security_group_id        = module.primary_eks.node_security_group_id
+  source_security_group_id = aws_security_group.primary_alb.id
+}
+
+# Allow secondary ALB to communicate with secondary EKS node groups on all TCP ports
+resource "aws_security_group_rule" "secondary_alb_to_nodes" {
+  count                    = var.enable_secondary_cluster ? 1 : 0
+  provider                 = aws.secondary
+  type                     = "ingress"
+  from_port                = 0
+  to_port                  = 65535
+  protocol                 = "tcp"
+  security_group_id        = module.secondary_eks[0].node_security_group_id
+  source_security_group_id = aws_security_group.secondary_alb[0].id
+}
+
 

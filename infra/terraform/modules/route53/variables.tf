@@ -154,3 +154,68 @@ variable "primary_health_check_regions" {
   type        = list(string)
   default     = []
 }
+
+variable "secondary_health_check_enabled" {
+  description = "Whether to create a Route53 health check for the secondary target."
+  type        = bool
+  default     = true
+}
+
+variable "secondary_health_check_fqdn" {
+  description = "Secondary health check target FQDN. Falls back to the secondary alias or record target when empty."
+  type        = string
+  default     = ""
+}
+
+variable "secondary_health_check_port" {
+  description = "Secondary health check port."
+  type        = number
+  default     = 80
+}
+
+variable "secondary_health_check_type" {
+  description = "Secondary health check protocol."
+  type        = string
+  default     = "HTTP"
+
+  validation {
+    condition     = contains(["HTTP", "HTTPS"], upper(var.secondary_health_check_type))
+    error_message = "secondary_health_check_type must be HTTP or HTTPS."
+  }
+}
+
+variable "secondary_health_check_resource_path" {
+  description = "HTTP path used by the secondary health check."
+  type        = string
+  default     = "/"
+}
+
+variable "secondary_health_check_failure_threshold" {
+  description = "Number of failed checks before Route53 marks the secondary target unhealthy."
+  type        = number
+  default     = 3
+}
+
+variable "secondary_health_check_request_interval" {
+  description = "Interval in seconds between Route53 health check requests."
+  type        = number
+  default     = 30
+}
+
+variable "secondary_health_check_enable_sni" {
+  description = "Whether to enable SNI for HTTPS health checks."
+  type        = bool
+  default     = true
+}
+
+variable "secondary_health_check_search_string" {
+  description = "Optional string Route53 should look for in the health check response body."
+  type        = string
+  default     = ""
+}
+
+variable "secondary_health_check_regions" {
+  description = "Optional Route53 health check regions. Leave empty for the default managed regions."
+  type        = list(string)
+  default     = []
+}

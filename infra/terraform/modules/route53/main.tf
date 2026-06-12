@@ -8,6 +8,9 @@ locals {
   primary_health_check_target = length(trimspace(var.primary_health_check_fqdn)) > 0 ? var.primary_health_check_fqdn : (
     length(trimspace(var.primary_alias_name)) > 0 ? var.primary_alias_name : var.primary_record
   )
+  secondary_health_check_target = length(trimspace(var.secondary_health_check_fqdn)) > 0 ? var.secondary_health_check_fqdn : (
+    length(trimspace(var.secondary_alias_name)) > 0 ? var.secondary_alias_name : var.secondary_record
+  )
 }
 
 # Health check the primary endpoint so Route 53 can fail over when it stops returning healthy responses.
@@ -23,6 +26,21 @@ resource "aws_route53_health_check" "primary" {
   enable_sni        = upper(var.primary_health_check_type) == "HTTPS" ? var.primary_health_check_enable_sni : null
   search_string     = length(trimspace(var.primary_health_check_search_string)) > 0 ? var.primary_health_check_search_string : null
   regions           = length(var.primary_health_check_regions) > 0 ? var.primary_health_check_regions : null
+}
+
+# Health check the secondary endpoint so Route 53 can fail over when it stops returning healthy responses.
+resource "aws_route53_health_check" "secondary" {
+  count = var.create_secondary_record && var.secondary_health_check_enabled ? 1 : 0
+
+  fqdn              = local.secondary_health_check_target
+  port              = var.secondary_health_check_port
+  type              = upper(var.secondary_health_check_type)
+  resource_path     = contains(["HTTP", "HTTPS"], upper(var.secondary_health_check_type)) ? var.secondary_health_check_resource_path : null
+  failure_threshold = var.secondary_health_check_failure_threshold
+  request_interval  = var.secondary_health_check_request_interval
+  enable_sni        = upper(var.secondary_health_check_type) == "HTTPS" ? var.secondary_health_check_enable_sni : null
+  search_string     = length(trimspace(var.secondary_health_check_search_string)) > 0 ? var.secondary_health_check_search_string : null
+  regions           = length(var.secondary_health_check_regions) > 0 ? var.secondary_health_check_regions : null
 }
 
 # Primary record that receives traffic while the primary region is healthy.
@@ -83,7 +101,7 @@ resource "aws_route53_record" "secondary_standard" {
     type = "SECONDARY"
   }
 
-  health_check_id = null
+  health_check_id = var.create_secondary_record && var.secondary_health_check_enabled ? aws_route53_health_check.secondary[0].id : null
 }
 
 # Secondary alias record that serves as the fallback target in failover mode.
@@ -106,5 +124,5 @@ resource "aws_route53_record" "secondary_alias" {
     evaluate_target_health = var.alias_evaluate_target_health
   }
 
-  health_check_id = null
+  health_check_id = var.create_secondary_record && var.secondary_health_check_enabled ? aws_route53_health_check.secondary[0].id : null
 }

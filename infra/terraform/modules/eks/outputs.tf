@@ -22,3 +22,8 @@ output "oidc_provider_arn" {
   description = "OIDC provider ARN for IAM roles for service accounts."
   value       = module.eks.oidc_provider_arn
 }
+
+output "node_security_group_id" {
+  description = "EKS node security group ID."
+  value       = module.eks.node_security_group_id
+}

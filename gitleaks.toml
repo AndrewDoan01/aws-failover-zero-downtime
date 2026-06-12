@@ -1,0 +1,8 @@
+# Gitleaks configuration file
+# For more information, see https://github.com/gitleaks/gitleaks
+
+[allowlist]
+description = "Global allowlist to ignore rendered Kubernetes manifests and deployment state files containing mock secrets"
+paths = [
+    '''\.deploy_state/.*'''
+]

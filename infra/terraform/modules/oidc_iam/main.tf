@@ -45,7 +45,7 @@ data "aws_iam_policy_document" "assume_role" {
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = [
+      values = [
         "repo:${var.github_org}/${var.github_repo}:environment:${each.value}",
         "repo:${var.github_org}/aws-retail-store-sample-app:*"
       ]

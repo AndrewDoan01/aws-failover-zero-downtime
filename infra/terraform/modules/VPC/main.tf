@@ -6,7 +6,7 @@ terraform {
   }
 }
 
- # Delegate VPC, subnet, and gateway provisioning to the upstream VPC module.
+# Delegate VPC, subnet, and gateway provisioning to the upstream VPC module.
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "~> 5.0"

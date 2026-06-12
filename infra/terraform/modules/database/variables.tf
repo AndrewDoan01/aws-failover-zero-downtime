@@ -115,3 +115,9 @@ variable "replicate_source_db" {
   type        = string
   default     = null
 }
+
+variable "kms_key_id" {
+  description = "KMS key ARN for database encryption (required for cross-region read replicas)."
+  type        = string
+  default     = null
+}

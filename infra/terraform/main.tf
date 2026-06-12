@@ -57,7 +57,7 @@ locals {
           }
         }
       }
-    }}
+    } }
   )
 
   primary_common_tags = merge(local.base_tags, {
@@ -256,6 +256,13 @@ module "secondary_eks" {
   tags = local.secondary_cluster_tags
 }
 
+resource "aws_kms_key" "secondary_db" {
+  count                   = var.enable_secondary_cluster ? 1 : 0
+  provider                = aws.secondary
+  description             = "KMS key for secondary database replica encryption"
+  deletion_window_in_days = 7
+}
+
 module "secondary_database" {
   count = var.enable_secondary_cluster ? 1 : 0
 
@@ -269,6 +276,7 @@ module "secondary_database" {
   vpc_id              = module.secondary_vpc[0].vpc_id
   subnet_ids          = module.secondary_vpc[0].private_subnet_ids
   replicate_source_db = module.primary_database.db_instance_arn
+  kms_key_id          = aws_kms_key.secondary_db[0].arn
 
   tags = merge(local.secondary_common_tags, {
     Service      = "database"
@@ -627,9 +635,9 @@ module "primary_postgres_database" {
   username       = var.db_username
   db_password    = var.db_password
   engine         = "postgres"
-  engine_version = "16.1"
+  engine_version = "16.3"
   port           = 5432
-  
+
   vpc_id                     = module.primary_vpc.vpc_id
   subnet_ids                 = module.primary_vpc.private_subnet_ids
   allowed_cidr_blocks        = var.db_allowed_cidr_blocks
@@ -653,6 +661,7 @@ module "secondary_postgres_database" {
   vpc_id              = module.secondary_vpc[0].vpc_id
   subnet_ids          = module.secondary_vpc[0].private_subnet_ids
   replicate_source_db = module.primary_postgres_database.db_instance_arn
+  kms_key_id          = aws_kms_key.secondary_db[0].arn
 
   tags = merge(local.secondary_common_tags, {
     Service      = "database-postgres"

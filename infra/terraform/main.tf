@@ -635,7 +635,7 @@ module "primary_postgres_database" {
   username       = var.db_username
   db_password    = var.db_password
   engine         = "postgres"
-  engine_version = "16.3"
+  engine_version = "16.9"
   port           = 5432
 
   vpc_id                     = module.primary_vpc.vpc_id

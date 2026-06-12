@@ -632,7 +632,7 @@ module "primary_postgres_database" {
 
   identifier     = "${var.db_identifier}-postgres"
   db_name        = "orders"
-  username       = var.db_username
+  username       = "postgres"
   db_password    = var.db_password
   engine         = "postgres"
   engine_version = "16.9"

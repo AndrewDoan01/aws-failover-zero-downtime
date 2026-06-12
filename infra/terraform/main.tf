@@ -80,8 +80,8 @@ locals {
     ClusterRole = "secondary"
   })
 
-  route53_resolved_zone_name   = trimspace(coalesce(var.route53_zone_name, "")) != "" ? trimspace(var.route53_zone_name) : "example.local"
-  route53_resolved_record_name = trimspace(coalesce(var.route53_record_name, "")) != "" ? trimspace(var.route53_record_name) : "retail-store-sample-app"
+  route53_resolved_zone_name   = var.route53_zone_name == null || trimspace(var.route53_zone_name) == "" ? "example.local" : trimspace(var.route53_zone_name)
+  route53_resolved_record_name = var.route53_record_name == null || trimspace(var.route53_record_name) == "" ? "retail-store-sample-app" : trimspace(var.route53_record_name)
 }
 
 module "primary_vpc" {

@@ -251,6 +251,7 @@ module "secondary_eks" {
   cluster_name           = var.eks_secondary_region_cluster_name
   vpc_id                 = module.secondary_vpc[0].vpc_id
   subnet_ids             = module.secondary_vpc[0].private_subnet_ids
+  access_entries         = local.primary_eks_access_entries
   node_desired_size      = var.eks_secondary_node_desired_size
   node_min_size          = var.eks_secondary_node_min_size
   node_max_size          = var.eks_secondary_node_max_size
@@ -258,6 +259,7 @@ module "secondary_eks" {
 
   tags = local.secondary_cluster_tags
 }
+
 
 resource "aws_kms_key" "secondary_db" {
   count                   = var.enable_secondary_cluster ? 1 : 0

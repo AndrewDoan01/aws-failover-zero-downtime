@@ -380,7 +380,7 @@ variable "route53_primary_health_check_type" {
 variable "route53_primary_health_check_resource_path" {
   description = "HTTP path checked by Route53 on the primary endpoint."
   type        = string
-  default     = "/"
+  default     = "/health"
 }
 
 variable "route53_primary_health_check_failure_threshold" {
@@ -440,7 +440,7 @@ variable "route53_secondary_health_check_type" {
 variable "route53_secondary_health_check_resource_path" {
   description = "HTTP path checked by Route53 on the secondary endpoint."
   type        = string
-  default     = "/"
+  default     = "/health"
 }
 
 variable "route53_secondary_health_check_failure_threshold" {

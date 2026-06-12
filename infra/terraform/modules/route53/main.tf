@@ -41,6 +41,10 @@ resource "aws_route53_health_check" "primary" {
   enable_sni        = upper(var.primary_health_check_type) == "HTTPS" ? var.primary_health_check_enable_sni : null
   search_string     = length(trimspace(var.primary_health_check_search_string)) > 0 ? var.primary_health_check_search_string : null
   regions           = length(var.primary_health_check_regions) > 0 ? var.primary_health_check_regions : null
+
+  tags = {
+    Name = "${var.record_name}-primary-hc"
+  }
 }
 
 # Health check the secondary endpoint so Route 53 can fail over when it stops returning healthy responses.
@@ -56,6 +60,10 @@ resource "aws_route53_health_check" "secondary" {
   enable_sni        = upper(var.secondary_health_check_type) == "HTTPS" ? var.secondary_health_check_enable_sni : null
   search_string     = length(trimspace(var.secondary_health_check_search_string)) > 0 ? var.secondary_health_check_search_string : null
   regions           = length(var.secondary_health_check_regions) > 0 ? var.secondary_health_check_regions : null
+
+  tags = {
+    Name = "${var.record_name}-secondary-hc"
+  }
 }
 
 # Primary record that receives traffic while the primary region is healthy.

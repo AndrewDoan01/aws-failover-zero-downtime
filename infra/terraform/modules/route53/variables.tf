@@ -223,7 +223,7 @@ variable "secondary_health_check_regions" {
 variable "create_hosted_zone" {
   description = "Whether to create the Route53 hosted zone instead of looking it up."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "vpc_id" {

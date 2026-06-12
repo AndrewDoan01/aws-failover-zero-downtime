@@ -21,6 +21,28 @@ provider "aws" {
 
 data "aws_caller_identity" "current" {}
 
+data "aws_eks_cluster_auth" "primary" {
+  name = module.primary_eks.cluster_name
+}
+
+provider "kubernetes" {
+  host                   = module.primary_eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.primary_eks.cluster_certificate_authority_data)
+  token                  = data.aws_eks_cluster_auth.primary.token
+}
+
+data "aws_eks_cluster_auth" "secondary" {
+  count = var.enable_secondary_cluster && length(module.secondary_eks) > 0 ? 1 : 0
+  name  = module.secondary_eks[0].cluster_name
+}
+
+provider "kubernetes" {
+  alias                  = "secondary"
+  host                   = var.enable_secondary_cluster && length(module.secondary_eks) > 0 ? module.secondary_eks[0].cluster_endpoint : ""
+  cluster_ca_certificate = var.enable_secondary_cluster && length(module.secondary_eks) > 0 ? base64decode(module.secondary_eks[0].cluster_certificate_authority_data) : ""
+  token                  = var.enable_secondary_cluster && length(data.aws_eks_cluster_auth.secondary) > 0 ? data.aws_eks_cluster_auth.secondary[0].token : ""
+}
+
 locals {
   base_tags = merge(
     {
@@ -188,7 +210,7 @@ resource "aws_lb" "primary" {
 # Target group for primary ALB (pointing to EKS nodes)
 resource "aws_lb_target_group" "primary" {
   name        = "${var.project_name}-primary-tg"
-  port        = 80
+  port        = 8080
   protocol    = "HTTP"
   vpc_id      = module.primary_vpc.vpc_id
   target_type = "ip"
@@ -198,13 +220,40 @@ resource "aws_lb_target_group" "primary" {
     unhealthy_threshold = 2
     timeout             = 3
     interval            = 30
-    path                = "/health"
+    path                = "/"
     matcher             = "200-399"
   }
 
   tags = merge(local.primary_common_tags, {
     Name = "${var.project_name}-primary-tg"
   })
+}
+
+# Resolve UI pod IPs dynamically from primary EKS cluster
+data "kubernetes_resources" "primary_ui" {
+  api_version    = "v1"
+  kind           = "Endpoints"
+  namespace      = "retail-store-sample-test"
+  field_selector = "metadata.name=ui"
+}
+
+locals {
+  primary_ui_ips = flatten([
+    for obj in data.kubernetes_resources.primary_ui.objects : [
+      for subset in try(obj.subsets, []) : [
+        for address in try(subset.addresses, []) : address.ip
+      ]
+    ]
+  ])
+}
+
+# Attach UI pod IPs to primary target group
+resource "aws_lb_target_group_attachment" "primary_ui" {
+  for_each = toset(local.primary_ui_ips)
+
+  target_group_arn = aws_lb_target_group.primary.arn
+  target_id        = each.value
+  port             = 8080
 }
 
 # Listener for primary ALB
@@ -376,7 +425,7 @@ resource "aws_lb_target_group" "secondary" {
 
   provider    = aws.secondary
   name        = "NT114-secondary-tg"
-  port        = 80
+  port        = 8080
   protocol    = "HTTP"
   vpc_id      = module.secondary_vpc[0].vpc_id
   target_type = "ip"
@@ -386,13 +435,42 @@ resource "aws_lb_target_group" "secondary" {
     unhealthy_threshold = 2
     timeout             = 3
     interval            = 30
-    path                = "/health"
+    path                = "/"
     matcher             = "200-399"
   }
 
   tags = merge(local.secondary_common_tags, {
     Name = "${var.project_name}-secondary-tg"
   })
+}
+
+# Resolve UI pod IPs dynamically from secondary EKS cluster
+data "kubernetes_resources" "secondary_ui" {
+  provider       = kubernetes.secondary
+  count          = var.enable_secondary_cluster && length(module.secondary_eks) > 0 ? 1 : 0
+  api_version    = "v1"
+  kind           = "Endpoints"
+  namespace      = "retail-store-sample-test"
+  field_selector = "metadata.name=ui"
+}
+
+locals {
+  secondary_ui_ips = var.enable_secondary_cluster && length(data.kubernetes_resources.secondary_ui) > 0 ? flatten([
+    for obj in data.kubernetes_resources.secondary_ui[0].objects : [
+      for subset in try(obj.subsets, []) : [
+        for address in try(subset.addresses, []) : address.ip
+      ]
+    ]
+  ]) : []
+}
+
+# Attach UI pod IPs to secondary target group
+resource "aws_lb_target_group_attachment" "secondary_ui" {
+  for_each = toset(local.secondary_ui_ips)
+
+  target_group_arn = aws_lb_target_group.secondary[0].arn
+  target_id        = each.value
+  port             = 8080
 }
 
 # Listener for secondary ALB
@@ -618,6 +696,65 @@ module "ecr" {
   tags = local.base_tags
 }
 
+module "ecr_secondary" {
+  source = "./modules/ECR"
+
+  providers = {
+    aws = aws.secondary
+  }
+
+  repositories = [
+    {
+      name                 = "aws-retail-store-sample-app"
+      image_tag_mutability = "IMMUTABLE"
+      scan_on_push         = true
+      tags = merge(local.base_tags, {
+        Service = "ecr"
+      })
+    },
+    {
+      name                 = "aws-retail-store-sample-app-catalog"
+      image_tag_mutability = "IMMUTABLE"
+      scan_on_push         = true
+      tags = merge(local.base_tags, {
+        Service = "ecr"
+      })
+    },
+    {
+      name                 = "aws-retail-store-sample-app-cart"
+      image_tag_mutability = "IMMUTABLE"
+      scan_on_push         = true
+      tags = merge(local.base_tags, {
+        Service = "ecr"
+      })
+    },
+    {
+      name                 = "aws-retail-store-sample-app-checkout"
+      image_tag_mutability = "IMMUTABLE"
+      scan_on_push         = true
+      tags = merge(local.base_tags, {
+        Service = "ecr"
+      })
+    },
+    {
+      name                 = "aws-retail-store-sample-app-orders"
+      image_tag_mutability = "IMMUTABLE"
+      scan_on_push         = true
+      tags = merge(local.base_tags, {
+        Service = "ecr"
+      })
+    },
+    {
+      name                 = "aws-retail-store-sample-app-ui"
+      image_tag_mutability = "IMMUTABLE"
+      scan_on_push         = true
+      tags = merge(local.base_tags, {
+        Service = "ecr"
+      })
+    }
+  ]
+}
+
 module "github_ecr_role" {
 
   source = "./modules/oidc_ecr_role"
@@ -630,8 +767,7 @@ module "github_ecr_role" {
 
   role_name = "github-actions-ecr-dev"
 
-  repository_arns = values(module.ecr.repository_arns)
-
+  repository_arns = concat(values(module.ecr.repository_arns), values(module.ecr_secondary.repository_arns))
 }
 
 module "primary_postgres_database" {

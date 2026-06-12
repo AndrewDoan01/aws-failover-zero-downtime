@@ -1,9 +1,24 @@
 data "aws_route53_zone" "this" {
+  count        = var.create_hosted_zone ? 0 : 1
   name         = var.zone_name
   private_zone = var.private_zone
 }
 
+resource "aws_route53_zone" "this" {
+  count = var.create_hosted_zone ? 1 : 0
+  name  = var.zone_name
+
+  dynamic "vpc" {
+    for_each = var.private_zone && var.vpc_id != "" ? [var.vpc_id] : []
+    content {
+      vpc_id = vpc.value
+    }
+  }
+}
+
 locals {
+  zone_id = var.create_hosted_zone ? aws_route53_zone.this[0].zone_id : data.aws_route53_zone.this[0].zone_id
+
   # Resolve the health check target from the most specific input available.
   primary_health_check_target = length(trimspace(var.primary_health_check_fqdn)) > 0 ? var.primary_health_check_fqdn : (
     length(trimspace(var.primary_alias_name)) > 0 ? var.primary_alias_name : var.primary_record
@@ -47,7 +62,7 @@ resource "aws_route53_health_check" "secondary" {
 resource "aws_route53_record" "primary_standard" {
   count = var.create_alias ? 0 : 1
 
-  zone_id = data.aws_route53_zone.this.zone_id
+  zone_id = local.zone_id
   name    = var.record_name
   type    = upper(var.record_type)
   ttl     = var.ttl
@@ -66,7 +81,7 @@ resource "aws_route53_record" "primary_standard" {
 resource "aws_route53_record" "primary_alias" {
   count = var.create_alias ? 1 : 0
 
-  zone_id = data.aws_route53_zone.this.zone_id
+  zone_id = local.zone_id
   name    = var.record_name
   type    = upper(var.record_type)
 
@@ -89,7 +104,7 @@ resource "aws_route53_record" "primary_alias" {
 resource "aws_route53_record" "secondary_standard" {
   count = var.create_secondary_record && !var.create_alias ? 1 : 0
 
-  zone_id = data.aws_route53_zone.this.zone_id
+  zone_id = local.zone_id
   name    = var.record_name
   type    = upper(var.record_type)
   ttl     = var.ttl
@@ -108,7 +123,7 @@ resource "aws_route53_record" "secondary_standard" {
 resource "aws_route53_record" "secondary_alias" {
   count = var.create_secondary_record && var.create_alias ? 1 : 0
 
-  zone_id = data.aws_route53_zone.this.zone_id
+  zone_id = local.zone_id
   name    = var.record_name
   type    = upper(var.record_type)
 

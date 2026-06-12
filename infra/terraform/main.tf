@@ -79,6 +79,9 @@ locals {
     Service     = "eks"
     ClusterRole = "secondary"
   })
+
+  route53_resolved_zone_name   = var.route53_zone_name == null || trimspace(var.route53_zone_name) == "" ? "example.local" : trimspace(var.route53_zone_name)
+  route53_resolved_record_name = var.route53_record_name == null || trimspace(var.route53_record_name) == "" ? "retail-store-sample-app" : trimspace(var.route53_record_name)
 }
 
 module "primary_vpc" {
@@ -493,12 +496,14 @@ module "route53" {
   count  = var.enable_route53 ? 1 : 0
   source = "./modules/route53"
 
-  zone_name      = var.route53_zone_name
-  private_zone   = var.route53_private_zone
-  record_name    = var.route53_record_name
-  record_type    = var.route53_record_type
-  create_alias   = true
-  primary_record = aws_lb.primary.dns_name
+  zone_name          = local.route53_resolved_zone_name
+  private_zone       = var.route53_private_zone
+  create_hosted_zone = var.route53_create_hosted_zone
+  vpc_id             = module.primary_vpc.vpc_id
+  record_name        = local.route53_resolved_record_name
+  record_type        = var.route53_record_type
+  create_alias       = true
+  primary_record     = aws_lb.primary.dns_name
 
   primary_alias_name    = aws_lb.primary.dns_name
   primary_alias_zone_id = aws_lb.primary.zone_id

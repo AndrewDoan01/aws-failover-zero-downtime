@@ -219,3 +219,15 @@ variable "secondary_health_check_regions" {
   type        = list(string)
   default     = []
 }
+
+variable "create_hosted_zone" {
+  description = "Whether to create the Route53 hosted zone instead of looking it up."
+  type        = bool
+  default     = true
+}
+
+variable "vpc_id" {
+  description = "VPC ID to associate with the created private hosted zone."
+  type        = string
+  default     = ""
+}

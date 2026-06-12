@@ -1,6 +1,6 @@
 output "zone_id" {
   description = "Hosted zone ID."
-  value       = data.aws_route53_zone.this.zone_id
+  value       = local.zone_id
 }
 
 output "primary_fqdn" {

@@ -284,7 +284,7 @@ variable "route53_zone_name" {
 variable "route53_private_zone" {
   description = "Whether Route53 zone is private."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "route53_record_name" {
@@ -471,4 +471,10 @@ variable "route53_secondary_health_check_regions" {
   description = "Optional Route53 health check regions. Leave empty for the default managed regions."
   type        = list(string)
   default     = []
+}
+
+variable "route53_create_hosted_zone" {
+  description = "Whether to create the Route53 hosted zone automatically instead of looking it up."
+  type        = bool
+  default     = true
 }

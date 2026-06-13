@@ -12,15 +12,18 @@ resources:
 
 replicas:
   - name: carts
-    count: 1
+    count: 0
   - name: checkout
-    count: 1
+    count: 0
   - name: orders
-    count: 1
+    count: 0
   - name: ui
-    count: 1
+    count: 0
+  - name: catalog
+    count: 0
 
 patches:
+
   - patch: |
       apiVersion: apps/v1
       kind: Deployment

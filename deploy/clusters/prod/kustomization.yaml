@@ -10,7 +10,21 @@ resources:
   - ../../services/orders/base
   - ../../services/ui/base
 
+replicas:
+  - name: carts
+    count: 0
+  - name: checkout
+    count: 0
+  - name: orders
+    count: 0
+  - name: ui
+    count: 0
+  - name: catalog
+    count: 0
+
 images:
+
+
   - name: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app
     newName: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-catalog
     newTag: prod-v1.0.1 # {"$imagepolicy": "flux-system:catalog-prod:tag"}

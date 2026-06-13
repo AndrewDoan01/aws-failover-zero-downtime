@@ -10,15 +10,15 @@ resources:
   - ../../services/ui/base
 replicas:
   - name: carts
-    count: 0
+    count: 2
   - name: checkout
-    count: 0
+    count: 2
   - name: orders
-    count: 0
+    count: 2
   - name: ui
-    count: 0
+    count: 2
   - name: catalog
-    count: 0
+    count: 2
 patches:
   - patch: |
       apiVersion: apps/v1

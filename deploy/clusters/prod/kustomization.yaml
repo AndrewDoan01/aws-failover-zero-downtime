@@ -10,15 +10,15 @@ resources:
   - ../../services/ui/base
 replicas:
   - name: carts
-    count: 0
+    count: 2
   - name: checkout
-    count: 0
+    count: 2
   - name: orders
-    count: 0
+    count: 2
   - name: ui
-    count: 0
+    count: 2
   - name: catalog
-    count: 0
+    count: 2
 images:
   - name: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app
     newName: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-catalog

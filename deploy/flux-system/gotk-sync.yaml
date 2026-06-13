@@ -23,7 +23,7 @@ spec:
     name: aws-retail-store-sample-app
   path: ./deploy/clusters/test
   prune: true
-  wait: true
+  wait: false
   timeout: 5m
   targetNamespace: retail-store-sample-test
 ---
@@ -39,7 +39,7 @@ spec:
     name: aws-retail-store-sample-app
   path: ./deploy/clusters/staging
   prune: true
-  wait: true
+  wait: false
   timeout: 5m
   targetNamespace: retail-store-sample-staging
   dependsOn:
@@ -57,7 +57,7 @@ spec:
     name: aws-retail-store-sample-app
   path: ./deploy/clusters/prod
   prune: true
-  wait: true
+  wait: false
   timeout: 5m
   targetNamespace: retail-store-sample-prod
   dependsOn:
@@ -75,6 +75,6 @@ spec:
     name: aws-retail-store-sample-app
   path: ./deploy/flux-system
   prune: true
-  wait: true
+  wait: false
   timeout: 5m
 

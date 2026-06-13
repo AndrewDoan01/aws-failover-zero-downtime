@@ -1,0 +1,7 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: retail-store-sample-app
+spec:
+  rules:
+    - host: retail-store-sample-app.example.com

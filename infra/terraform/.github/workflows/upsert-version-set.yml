@@ -1,0 +1,181 @@
+name: Upsert Version Set
+
+on:
+  workflow_dispatch:
+    inputs:
+      # The target environment where the deployment will happen.
+      # Restricted to predefined choices to prevent typos and unauthorized environments.
+      environment:
+        description: Target environment
+        required: true
+        type: choice
+        options:
+          - test
+          - staging
+          - prod
+
+      # The logical name of the application or microservice being deployed.
+      service_name:
+        description: Service name
+        required: true
+        type: string
+
+      # The name given to this specific Helm release instance in Kubernetes.
+      release:
+        description: Helm release name
+        required: true
+        type: string
+
+      # The Kubernetes namespace where the resources will be created/updated.
+      namespace:
+        description: Kubernetes namespace
+        required: true
+        type: string
+
+      # The reference to the Helm chart (e.g., repository-name/chart-name or a local path).
+      chart:
+        description: Helm chart reference
+        required: true
+        type: string
+
+      # The specific version of the Helm chart to use for this deployment.
+      chart_version:
+        description: Helm chart version
+        required: true
+        type: string
+
+      # The full URI of the container image repository (e.g., AWS ECR, Docker Hub).
+      # Example: 123456789.dkr.ecr.us-east-1.amazonaws.com/my-app
+      image_repository:
+        description: Full ECR repository URI
+        required: true
+        type: string
+
+      # The unique, immutable SHA256 digest of the container image. 
+      # Using a digest instead of a tag ensures you deploy the exact image intended.
+      image_digest:
+        description: Immutable image digest (sha256:...)
+        required: true
+        type: string
+
+      # A unique identifier passed from the upstream CI/CD pipeline that built the app.
+      # Useful for traceability and auditing.
+      release_id:
+        description: Release identifier from app pipeline
+        required: true
+        type: string
+
+      # The Git commit SHA of the application source code that corresponds to this image.
+      # Links the deployed running code back to a specific point in the version control history.
+      app_commit_sha:
+        description: App commit SHA
+        required: true
+        type: string
+
+      # (Optional) Used if targeting a specific subset of pods for smoke testing or canary deployments.
+      smoke_deployment:
+        description: Optional smoke deployment name
+        required: false
+        type: string
+
+      # (Optional) Specific Helm values files to override default chart configurations.
+      # Can be passed as a comma-separated list or a JSON array.
+      values_files:
+        description: Optional comma-separated list or JSON array of values files
+        required: false
+        type: string
+
+  repository_dispatch:
+    types:
+      - upsert-version-set
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  upsert:
+    runs-on: ubuntu-latest
+    env:
+      TARGET_ENV: ${{ github.event.client_payload.environment || inputs.environment }}
+      SERVICE_NAME: ${{ github.event.client_payload.service_name || inputs.service_name }}
+      RELEASE: ${{ github.event.client_payload.release || inputs.release }}
+      NAMESPACE: ${{ github.event.client_payload.namespace || inputs.namespace }}
+      CHART: ${{ github.event.client_payload.chart || inputs.chart }}
+      CHART_VERSION: ${{ github.event.client_payload.chart_version || inputs.chart_version }}
+      IMAGE_REPOSITORY: ${{ github.event.client_payload.image_repository ||
+        inputs.image_repository }}
+      IMAGE_DIGEST: ${{ github.event.client_payload.image_digest || inputs.image_digest }}
+      RELEASE_ID: ${{ github.event.client_payload.release_id || inputs.release_id }}
+      APP_COMMIT_SHA: ${{ github.event.client_payload.app_commit_sha ||
+        inputs.app_commit_sha }}
+      SMOKE_DEPLOYMENT: ${{ github.event.client_payload.smoke_deployment ||
+        inputs.smoke_deployment }}
+      VALUES_FILES: ${{ github.event.client_payload.values_files || inputs.values_files }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required payload fields
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(TARGET_ENV SERVICE_NAME RELEASE NAMESPACE CHART CHART_VERSION IMAGE_REPOSITORY IMAGE_DIGEST RELEASE_ID APP_COMMIT_SHA)
+          for var_name in "${required[@]}"; do
+            value="${!var_name:-}"
+            if [[ -z "${value}" ]]; then
+              echo "Missing required field: ${var_name}"
+              exit 1
+            fi
+          done
+
+      - name: Upsert version record
+        shell: bash
+        run: |
+          python3 .github/scripts/upsert_version_set.py \
+            --environment "${TARGET_ENV}" \
+            --service-name "${SERVICE_NAME}" \
+            --release "${RELEASE}" \
+            --namespace "${NAMESPACE}" \
+            --chart "${CHART}" \
+            --chart-version "${CHART_VERSION}" \
+            --image-repository "${IMAGE_REPOSITORY}" \
+            --image-digest "${IMAGE_DIGEST}" \
+            --release-id "${RELEASE_ID}" \
+            --app-commit-sha "${APP_COMMIT_SHA}" \
+            --smoke-deployment "${SMOKE_DEPLOYMENT:-}" \
+            --values-files "${VALUES_FILES:-}"
+
+      - name: Validate schema
+        shell: bash
+        run: ./.github/scripts/validate_versions.sh "${TARGET_ENV}"
+
+      - name: Build branch metadata
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          service_slug="$(echo "${SERVICE_NAME}" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9-' '-')"
+          echo "branch=automation/version-${TARGET_ENV}-${service_slug}-${GITHUB_RUN_ID}" >> "${GITHUB_OUTPUT}"
+          echo "title=chore(deploy): upsert ${TARGET_ENV} version for ${SERVICE_NAME}" >> "${GITHUB_OUTPUT}"
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "chore(deploy): upsert ${TARGET_ENV} version for ${SERVICE_NAME}"
+          branch: ${{ steps.meta.outputs.branch }}
+          title: ${{ steps.meta.outputs.title }}
+          body: |
+            Automated version-set update.
+
+            - environment: `${{ env.TARGET_ENV }}`
+            - service: `${{ env.SERVICE_NAME }}`
+            - release_id: `${{ env.RELEASE_ID }}`
+            - app_commit_sha: `${{ env.APP_COMMIT_SHA }}`
+            - image_repository: `${{ env.IMAGE_REPOSITORY }}`
+            - image_digest: `${{ env.IMAGE_DIGEST }}`
+          labels: |
+            automation
+            deployment
+          add-paths: |
+            deploy/versions/${{ env.TARGET_ENV }}.json

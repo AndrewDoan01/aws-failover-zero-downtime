@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: prod
+
+bases:
+  - ../../base
+
+commonLabels:
+  environment: prod
+
+replicas:
+  - name: catalog
+    count: 3
+
+configMapGenerator:
+  - name: catalog-config
+    behavior: merge
+    literals:
+      - LOG_LEVEL=warn
+      - DATABASE_ENABLED=true
+      - CACHE_ENABLED=true
+
+patchesStrategicMerge:
+  - deployment-patch.yaml
+
+images:
+  - name: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app
+    newTag: prod

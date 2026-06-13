@@ -35,4 +35,4 @@ images:
     newTag: prod-v1.0.4 # {"$imagepolicy": "flux-system:orders-prod:tag"}
   - name: public.ecr.aws/aws-containers/retail-store-sample-ui
     newName: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-ui
-    newTag: prod-v1.0.1 # {"$imagepolicy": "flux-system:ui-prod:tag"}
+    newTag: prod-v1.0.4 # {"$imagepolicy": "flux-system:ui-prod:tag"}

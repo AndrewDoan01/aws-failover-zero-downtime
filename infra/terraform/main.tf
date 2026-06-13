@@ -237,7 +237,7 @@ resource "aws_lb_target_group" "primary" {
 data "kubernetes_resources" "primary_ui" {
   api_version    = "v1"
   kind           = "Endpoints"
-  namespace      = "retail-store-sample-test"
+  namespace      = "retail-store-sample-prod"
   field_selector = "metadata.name=ui"
 }
 
@@ -458,7 +458,7 @@ data "kubernetes_resources" "secondary_ui" {
   count          = var.enable_secondary_cluster && length(module.secondary_eks) > 0 ? 1 : 0
   api_version    = "v1"
   kind           = "Endpoints"
-  namespace      = "retail-store-sample-test"
+  namespace      = "retail-store-sample-prod"
   field_selector = "metadata.name=ui"
 }
 

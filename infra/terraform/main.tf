@@ -209,7 +209,7 @@ resource "aws_lb" "primary" {
 
 # Target group for primary ALB (pointing to EKS nodes)
 resource "aws_lb_target_group" "primary" {
-  name        = "${var.project_name}-primary-tg"
+  name_prefix = "pri-tg"
   port        = 8080
   protocol    = "HTTP"
   vpc_id      = module.primary_vpc.vpc_id
@@ -227,6 +227,10 @@ resource "aws_lb_target_group" "primary" {
   tags = merge(local.primary_common_tags, {
     Name = "${var.project_name}-primary-tg"
   })
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # Resolve UI pod IPs dynamically from primary EKS cluster
@@ -424,7 +428,7 @@ resource "aws_lb_target_group" "secondary" {
   count = var.enable_secondary_cluster ? 1 : 0
 
   provider    = aws.secondary
-  name        = "NT114-secondary-tg"
+  name_prefix = "sec-tg"
   port        = 8080
   protocol    = "HTTP"
   vpc_id      = module.secondary_vpc[0].vpc_id
@@ -442,6 +446,10 @@ resource "aws_lb_target_group" "secondary" {
   tags = merge(local.secondary_common_tags, {
     Name = "${var.project_name}-secondary-tg"
   })
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # Resolve UI pod IPs dynamically from secondary EKS cluster

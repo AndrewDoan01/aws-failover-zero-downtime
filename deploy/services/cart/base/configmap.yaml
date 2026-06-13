@@ -8,6 +8,4 @@ metadata:
     app.kubernetes.io/component: service
     app.kubernetes.io/owner: retail-store-sample
 data:
-  RETAIL_CART_PERSISTENCE_PROVIDER: dynamodb
-  RETAIL_CART_PERSISTENCE_DYNAMODB_TABLE_NAME: Items
-  RETAIL_CART_PERSISTENCE_DYNAMODB_CREATE_TABLE: "true"
+  RETAIL_CART_PERSISTENCE_PROVIDER: in-memory

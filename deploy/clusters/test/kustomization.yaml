@@ -20,7 +20,72 @@ replicas:
   - name: ui
     count: 1
 
+patches:
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: carts
+      spec:
+        template:
+          spec:
+            containers:
+              - name: carts
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 256Mi
+                  limits:
+                    cpu: 250m
+                    memory: 512Mi
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: orders
+      spec:
+        template:
+          spec:
+            containers:
+              - name: orders
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 256Mi
+                  limits:
+                    cpu: 250m
+                    memory: 512Mi
+  - patch: |
+      apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      metadata:
+        name: carts
+      spec:
+        minReplicas: 1
+  - patch: |
+      apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      metadata:
+        name: checkout
+      spec:
+        minReplicas: 1
+  - patch: |
+      apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      metadata:
+        name: orders
+      spec:
+        minReplicas: 1
+  - patch: |
+      apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      metadata:
+        name: ui
+      spec:
+        minReplicas: 1
+
 images:
+
 
   - name: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app
     newName: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-catalog

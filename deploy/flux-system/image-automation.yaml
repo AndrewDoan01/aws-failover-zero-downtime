@@ -58,4 +58,53 @@ spec:
   secretRef:
     name: ecr-creds
   provider: aws
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: cart-app-repo
+  namespace: flux-system
+spec:
+  image: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-cart
+  interval: 5m
+  secretRef:
+    name: ecr-creds
+  provider: aws
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: checkout-app-repo
+  namespace: flux-system
+spec:
+  image: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-checkout
+  interval: 5m
+  secretRef:
+    name: ecr-creds
+  provider: aws
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: orders-app-repo
+  namespace: flux-system
+spec:
+  image: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-orders
+  interval: 5m
+  secretRef:
+    name: ecr-creds
+  provider: aws
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: ui-app-repo
+  namespace: flux-system
+spec:
+  image: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-ui
+  interval: 5m
+  secretRef:
+    name: ecr-creds
+  provider: aws
+
 

@@ -26,7 +26,7 @@ prometheus:
 
 # ── Grafana ─────────────────────────────────────────────────
 grafana:
-  enabled: true
+  enabled: false
   deploymentStrategy:
     type: Recreate
   # Password inject từ env GRAFANA_ADMIN_PASSWORD tại deploy-job.yml
@@ -49,7 +49,7 @@ grafana:
 
 # ── AlertManager ─────────────────────────────────────────────
 alertmanager:
-  enabled: true
+  enabled: false
   alertmanagerSpec:
     resources:
       requests:

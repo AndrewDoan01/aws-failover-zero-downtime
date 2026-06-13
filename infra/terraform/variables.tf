@@ -230,7 +230,7 @@ variable "eks_secondary_node_min_size" {
 variable "eks_secondary_node_max_size" {
   description = "Maximum node count for passive secondary EKS cluster."
   type        = number
-  default     = 4
+  default     = 8
 }
 
 variable "create_cluster_resource_groups" {

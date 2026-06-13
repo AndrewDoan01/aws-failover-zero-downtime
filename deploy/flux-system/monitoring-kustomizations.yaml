@@ -1,0 +1,48 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: monitoring-test
+  namespace: flux-system
+spec:
+  interval: 5m
+  sourceRef:
+    kind: GitRepository
+    name: aws-retail-store-sample-app
+  path: ./deploy/monitoring/test
+  prune: true
+  wait: false
+  timeout: 5m
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: monitoring-staging
+  namespace: flux-system
+spec:
+  interval: 5m
+  sourceRef:
+    kind: GitRepository
+    name: aws-retail-store-sample-app
+  path: ./deploy/monitoring/staging
+  prune: true
+  wait: false
+  timeout: 5m
+  dependsOn:
+    - name: monitoring-test
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: monitoring-prod
+  namespace: flux-system
+spec:
+  interval: 10m
+  sourceRef:
+    kind: GitRepository
+    name: aws-retail-store-sample-app
+  path: ./deploy/monitoring/prod
+  prune: true
+  wait: false
+  timeout: 5m
+  dependsOn:
+    - name: monitoring-staging

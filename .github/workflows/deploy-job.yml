@@ -105,27 +105,4 @@ jobs:
         shell: bash
         run: ./.github/scripts/validate_versions.sh "${{ inputs.environment_name }}"
 
-      - name: Check ECR digests
-        shell: bash
-        run: ./.github/scripts/check_ecr_digests.sh "${{ inputs.environment_name }}"
 
-      - name: Render and deploy Helm
-        shell: bash
-        env:
-          DISCORD_WEBHOOK_URL: ${{ secrets.discord_webhook_url }}
-          GRAFANA_ADMIN_PASSWORD: ${{ secrets.grafana_admin_password }}
-        run: ./.github/scripts/deploy_helm.sh "${{ inputs.environment_name }}"
-
-      - name: Smoke test
-        id: smoke
-        shell: bash
-        continue-on-error: true
-        run: ./.github/scripts/smoke_test.sh "${{ inputs.environment_name }}"
-
-      - name: Auto rollback on smoke failure
-        if: steps.smoke.outcome == 'failure'
-        shell: bash
-        run: |
-          ./.github/scripts/rollback_helm.sh "${{ inputs.environment_name }}"
-          echo "Smoke test failed. Rolled back to previous revisions."
-          exit 1

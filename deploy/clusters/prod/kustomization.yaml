@@ -3,12 +3,38 @@ kind: Kustomization
 namespace: retail-store-sample-prod
 resources:
   - namespace.yaml
-  - ../../base
+  - ../../services/catalog/base
+  - ../../services/cart/base
+  - ../../services/checkout/base
+  - ../../services/orders/base
+  - ../../services/ui/base
+replicas:
+  - name: carts
+    count: 2
+  - name: checkout
+    count: 2
+  - name: orders
+    count: 2
+  - name: ui
+    count: 2
+  - name: catalog
+    count: 2
 images:
   - name: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app
-    newTag: prod-v1.0.1 # {"$imagepolicy": "flux-system:catalog-prod:tag"}
-    digest: "sha256:8bce809090c0f4c9d47559eb1a59e16eb388d5519567c21973cae9aa08e3ab6e" # {"$imagepolicy": "flux-system:catalog-prod:digest"}
-patches:
-  - path: deployment-patch.yaml
-  - path: configmap-patch.yaml
-  - path: ingress-patch.yaml
+    newName: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-catalog
+    newTag: prod-v1.0.4 # {"$imagepolicy": "flux-system:catalog-prod:tag"}
+    digest: "sha256:83498fbad237a85f882d724641e56137ee8868558b1f71f445b816eb5024e486" # {"$imagepolicy": "flux-system:catalog-prod:digest"}
+  - name: public.ecr.aws/aws-containers/retail-store-sample-cart
+    newName: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-cart
+    newTag: prod-v1.0.4 # {"$imagepolicy": "flux-system:cart-prod:tag"}
+  - name: public.ecr.aws/aws-containers/retail-store-sample-checkout
+    newName: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-checkout
+    newTag: prod-v1.0.4 # {"$imagepolicy": "flux-system:checkout-prod:tag"}
+  - name: public.ecr.aws/aws-containers/retail-store-sample-orders
+    newName: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-orders
+    newTag: prod-v1.0.4 # {"$imagepolicy": "flux-system:orders-prod:tag"}
+  - name: public.ecr.aws/aws-containers/retail-store-sample-ui
+    newName: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-ui
+    newTag: prod-v1.0.4 # {"$imagepolicy": "flux-system:ui-prod:tag"}
+
+

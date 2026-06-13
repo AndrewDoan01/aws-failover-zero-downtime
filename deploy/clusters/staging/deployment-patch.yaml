@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: retail-store-sample-app
 spec:
-  replicas: 2
+  replicas: 1
   template:
     spec:
       containers:

@@ -3,11 +3,100 @@ kind: Kustomization
 namespace: retail-store-sample-staging
 resources:
   - namespace.yaml
-  - ../../base
+  - ../../services/catalog/base
+  - ../../services/cart/base
+  - ../../services/checkout/base
+  - ../../services/orders/base
+  - ../../services/ui/base
+replicas:
+  - name: carts
+    count: 2
+  - name: checkout
+    count: 2
+  - name: orders
+    count: 2
+  - name: ui
+    count: 2
+  - name: catalog
+    count: 2
+patches:
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: carts
+      spec:
+        template:
+          spec:
+            containers:
+              - name: carts
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 256Mi
+                  limits:
+                    cpu: 250m
+                    memory: 512Mi
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: orders
+      spec:
+        template:
+          spec:
+            containers:
+              - name: orders
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 256Mi
+                  limits:
+                    cpu: 250m
+                    memory: 512Mi
+  - patch: |
+      apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      metadata:
+        name: carts
+      spec:
+        minReplicas: 1
+  - patch: |
+      apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      metadata:
+        name: checkout
+      spec:
+        minReplicas: 1
+  - patch: |
+      apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      metadata:
+        name: orders
+      spec:
+        minReplicas: 1
+  - patch: |
+      apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      metadata:
+        name: ui
+      spec:
+        minReplicas: 1
 images:
   - name: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app
-    newTag: staging-v1.0.1 # {"$imagepolicy": "flux-system:catalog-staging:tag"}
-patches:
-  - path: deployment-patch.yaml
-  - path: configmap-patch.yaml
-  - path: ingress-patch.yaml
+    newName: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-catalog
+    newTag: staging-v1.0.4 # {"$imagepolicy": "flux-system:catalog-staging:tag"}
+  - name: public.ecr.aws/aws-containers/retail-store-sample-cart
+    newName: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-cart
+    newTag: staging-v1.0.4 # {"$imagepolicy": "flux-system:cart-staging:tag"}
+  - name: public.ecr.aws/aws-containers/retail-store-sample-checkout
+    newName: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-checkout
+    newTag: staging-v1.0.4 # {"$imagepolicy": "flux-system:checkout-staging:tag"}
+  - name: public.ecr.aws/aws-containers/retail-store-sample-orders
+    newName: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-orders
+    newTag: staging-v1.0.4 # {"$imagepolicy": "flux-system:orders-staging:tag"}
+  - name: public.ecr.aws/aws-containers/retail-store-sample-ui
+    newName: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-ui
+    newTag: staging-v1.0.4 # {"$imagepolicy": "flux-system:ui-staging:tag"}
+
+

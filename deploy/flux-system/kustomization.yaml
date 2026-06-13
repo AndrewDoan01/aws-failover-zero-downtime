@@ -6,3 +6,5 @@ resources:
   - catalog-image-policy.yaml
   - catalog-image-automation.yaml
   - gotk-sync.yaml
+  - helm-repositories.yaml
+  - monitoring-kustomizations.yaml

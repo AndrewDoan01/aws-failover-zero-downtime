@@ -1,7 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: retail-store-sample-staging
-
 resources:
   - namespace.yaml
   - ../../services/catalog/base
@@ -9,7 +8,6 @@ resources:
   - ../../services/checkout/base
   - ../../services/orders/base
   - ../../services/ui/base
-
 replicas:
   - name: carts
     count: 0
@@ -21,9 +19,7 @@ replicas:
     count: 0
   - name: catalog
     count: 0
-
 patches:
-
   - patch: |
       apiVersion: apps/v1
       kind: Deployment
@@ -86,13 +82,10 @@ patches:
         name: ui
       spec:
         minReplicas: 1
-
 images:
-
-
   - name: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app
     newName: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-catalog
-    newTag: staging-v1.0.1 # {"$imagepolicy": "flux-system:catalog-staging:tag"}
+    newTag: staging-v1.0.4 # {"$imagepolicy": "flux-system:catalog-staging:tag"}
   - name: public.ecr.aws/aws-containers/retail-store-sample-cart
     newName: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-cart
     newTag: staging-v1.0.1 # {"$imagepolicy": "flux-system:cart-staging:tag"}
@@ -105,4 +98,3 @@ images:
   - name: public.ecr.aws/aws-containers/retail-store-sample-ui
     newName: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-ui
     newTag: staging-v1.0.1 # {"$imagepolicy": "flux-system:ui-staging:tag"}
-

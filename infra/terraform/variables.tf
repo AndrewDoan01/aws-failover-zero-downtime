@@ -478,3 +478,11 @@ variable "route53_create_hosted_zone" {
   type        = bool
   default     = true
 }
+
+variable "github_token" {
+  description = "GitHub Personal Access Token with repository dispatch permissions."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+

@@ -83,3 +83,11 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "github_token" {
+  description = "GitHub Personal Access Token with repository dispatch permissions."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+

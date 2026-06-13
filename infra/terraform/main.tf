@@ -237,7 +237,7 @@ resource "aws_lb_target_group" "primary" {
 data "kubernetes_resources" "primary_ui" {
   api_version    = "v1"
   kind           = "Endpoints"
-  namespace      = "retail-store-sample-test"
+  namespace      = "retail-store-sample-prod"
   field_selector = "metadata.name=ui"
 }
 
@@ -361,6 +361,7 @@ module "rds_failover_automation" {
   replication_lag_threshold_seconds  = var.rds_replication_lag_threshold_seconds
   replication_lag_evaluation_periods = var.rds_replication_lag_evaluation_periods
   replication_lag_period             = var.rds_replication_lag_period_seconds
+  github_token                       = var.github_token
 
   tags = local.base_tags
 }
@@ -458,7 +459,7 @@ data "kubernetes_resources" "secondary_ui" {
   count          = var.enable_secondary_cluster && length(module.secondary_eks) > 0 ? 1 : 0
   api_version    = "v1"
   kind           = "Endpoints"
-  namespace      = "retail-store-sample-test"
+  namespace      = "retail-store-sample-prod"
   field_selector = "metadata.name=ui"
 }
 

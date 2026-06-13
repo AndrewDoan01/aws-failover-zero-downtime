@@ -99,6 +99,7 @@ resource "aws_lambda_function" "promote_replica" {
       SECONDARY_REGION        = var.secondary_region
       BACKUP_RETENTION_DAYS   = tostring(var.promoted_backup_retention_days)
       DRY_RUN                 = tostring(var.enable_dry_run)
+      GITHUB_TOKEN            = var.github_token
     }
   }
 

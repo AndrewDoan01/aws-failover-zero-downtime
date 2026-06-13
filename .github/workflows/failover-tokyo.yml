@@ -1,0 +1,42 @@
+name: Auto Failover - Deploy Tokyo EKS
+
+on:
+  repository_dispatch:
+    types: [auto-failover-trigger]
+  workflow_dispatch: # Cho phép người vận hành kích hoạt thủ công nếu cần test
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  bootstrap-flux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.SECONDARY_AWS_REGION || 'ap-northeast-1' }}
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --name ${{ vars.SECONDARY_EKS_CLUSTER_NAME || 'eks-ap-northeast-1' }} --region ${{ vars.SECONDARY_AWS_REGION || 'ap-northeast-1' }}
+
+      - name: Install Flux CLI
+        run: |
+          curl -s https://fluxcd.io/install.sh | sudo bash
+
+      - name: Bootstrap Flux CD on Tokyo (Secondary)
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        run: |
+          flux bootstrap github \
+            --owner=AndrewDoan01 \
+            --repository=aws-failover-zero-downtime \
+            --branch=chore/flux \
+            --path=deploy/flux-system-secondary \
+            --personal

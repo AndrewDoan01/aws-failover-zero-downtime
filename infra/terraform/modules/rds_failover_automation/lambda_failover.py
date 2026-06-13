@@ -87,6 +87,30 @@ def handler(event, context):
         secondary_region,
     )
 
+    # Trigger GitHub Actions auto failover workflow via Repository Dispatch API
+    github_token = os.environ.get("GITHUB_TOKEN")
+    if github_token and github_token.strip():
+        import urllib.request
+        import json
+        
+        url = "https://api.github.com/repos/AndrewDoan01/aws-failover-zero-downtime/dispatches"
+        headers = {
+            "Authorization": f"Bearer {github_token.strip()}",
+            "Accept": "application/vnd.github+json",
+            "Content-Type": "application/json",
+            "User-Agent": "AWS-Lambda-Auto-Failover"
+        }
+        data = json.dumps({"event_type": "auto-failover-trigger"}).encode("utf-8")
+        
+        try:
+            req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+            with urllib.request.urlopen(req) as response_dispatch:
+                logger.info("Triggered GitHub Actions failover workflow. Status code: %d", response_dispatch.status)
+        except Exception as e:
+            logger.error("Failed to trigger GitHub Actions workflow: %s", str(e))
+    else:
+        logger.warning("GITHUB_TOKEN is not set or empty, skipping GitHub Actions trigger")
+
     return {
         "status": "promotion_requested",
         "secondary_db_identifier": secondary_db_identifier,

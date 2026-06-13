@@ -361,6 +361,7 @@ module "rds_failover_automation" {
   replication_lag_threshold_seconds  = var.rds_replication_lag_threshold_seconds
   replication_lag_evaluation_periods = var.rds_replication_lag_evaluation_periods
   replication_lag_period             = var.rds_replication_lag_period_seconds
+  github_token                       = var.github_token
 
   tags = local.base_tags
 }

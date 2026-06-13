@@ -6,6 +6,7 @@ resources:
   - ../../base
 images:
   - name: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app
+    newName: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-catalog
     newTag: staging-v1.0.1 # {"$imagepolicy": "flux-system:catalog-staging:tag"}
 patches:
   - path: deployment-patch.yaml

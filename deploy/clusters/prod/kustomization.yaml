@@ -3,6 +3,8 @@ kind: Kustomization
 namespace: retail-store-sample-prod
 resources:
   - namespace.yaml
+  - monitoring-namespace.yaml
+  - monitoring-release.yaml
   - ../../services/catalog/base
   - ../../services/cart/base
   - ../../services/checkout/base
@@ -36,3 +38,10 @@ images:
   - name: public.ecr.aws/aws-containers/retail-store-sample-ui
     newName: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-ui
     newTag: prod-v1.0.4 # {"$imagepolicy": "flux-system:ui-prod:tag"}
+
+configMapGenerator:
+  - name: monitoring-values
+    namespace: monitoring
+    files:
+      - values.yaml=../../values/monitoring.yaml
+      - alerts.yaml=../../values/monitoring-alerts.yaml

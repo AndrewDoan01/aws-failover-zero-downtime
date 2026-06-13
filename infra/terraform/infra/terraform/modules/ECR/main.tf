@@ -1,0 +1,34 @@
+# Create one ECR repository per configured image target.
+resource "aws_ecr_repository" "this" {
+  for_each = { for r in var.repositories : r["name"] => r }
+
+  name                 = each.value.name
+  image_tag_mutability = each.value.image_tag_mutability != null ? each.value.image_tag_mutability : var.image_tag_mutability
+
+  image_scanning_configuration {
+    scan_on_push = each.value.scan_on_push != null ? each.value.scan_on_push : var.scan_on_push
+  }
+
+  encryption_configuration {
+    encryption_type = each.value.encryption_type != null ? each.value.encryption_type : var.encryption_type
+    kms_key         = each.value.kms_key != null ? each.value.kms_key : var.kms_key
+  }
+
+  tags = merge(var.tags, each.value.tags != null ? each.value.tags : {})
+}
+
+# Attach lifecycle rules only where the repository definition supplies them.
+resource "aws_ecr_lifecycle_policy" "this" {
+  for_each = { for r in var.repositories : r.name => r if r.lifecycle_policy != null && r.lifecycle_policy != "" }
+
+  repository = each.key
+  policy     = each.value.lifecycle_policy
+}
+
+# Apply any repository-level access policy passed in with the repository definition.
+resource "aws_ecr_repository_policy" "this" {
+  for_each = { for r in var.repositories : r.name => r if r.policy != null && r.policy != "" }
+
+  repository = each.key
+  policy     = each.value.policy
+}

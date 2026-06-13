@@ -1,0 +1,131 @@
+name: Reusable Deploy Job
+
+on:
+  workflow_call:
+    inputs:
+      environment_name:
+        required: true
+        type: string
+        description: "The name of the GitHub Environment to target (test, staging, prod)"
+      deploy_target:
+        required: true
+        type: string
+        description: "Target cluster: primary or secondary"
+      aws_region:
+        required: true
+        type: string
+        description: "AWS region of the EKS cluster"
+      eks_cluster_name:
+        required: true
+        type: string
+        description: "The name of the target EKS cluster"
+      change_window_start:
+        required: false
+        type: string
+        default: ""
+      change_window_end:
+        required: false
+        type: string
+        default: ""
+    secrets:
+      aws_role_arn:
+        required: true
+      discord_webhook_url:
+        required: false
+        description: "Discord webhook URL for AlertManager notifications"
+      grafana_admin_password:
+        required: false
+        description: "Grafana admin user password"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment_name }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.aws_role_arn }}
+          aws-region: ${{ inputs.aws_region }}
+
+      - name: Validate target cluster variables
+        shell: bash
+        run: |
+          if [[ -z "${{ inputs.aws_region }}" || -z "${{ inputs.eks_cluster_name }}" ]]; then
+            echo "Missing target variables for EKS cluster deployment."
+            exit 1
+          fi
+
+      - name: Validate EKS cluster name variable
+        shell: bash
+        run: |
+          if [[ ! "${{ inputs.eks_cluster_name }}" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]*$ ]]; then
+            echo "Invalid EKS cluster name: ${{ inputs.eks_cluster_name }}."
+            exit 1
+          fi
+
+      - name: Validate prod change window
+        shell: bash
+        run: |
+          START="${{ inputs.change_window_start }}"
+          END="${{ inputs.change_window_end }}"
+          if [[ -z "${START}" || -z "${END}" ]]; then
+            echo "Change window variables are empty; skipping time gate"
+            exit 0
+          fi
+          NOW_HOUR="$(date -u +%H)"
+          if (( 10#${NOW_HOUR} < 10#${START} || 10#${NOW_HOUR} >= 10#${END} )); then
+            echo "Current UTC hour ${NOW_HOUR} is outside allowed window ${START}-${END}"
+            exit 1
+          fi
+
+      - name: Update kubeconfig
+        shell: bash
+        run: aws eks update-kubeconfig --name "${{ inputs.eks_cluster_name }}" --region "${{ inputs.aws_region }}"
+
+      - name: Validate version schema
+        shell: bash
+        run: ./.github/scripts/validate_versions.sh "${{ inputs.environment_name }}"
+
+      - name: Check ECR digests
+        shell: bash
+        run: ./.github/scripts/check_ecr_digests.sh "${{ inputs.environment_name }}"
+
+      - name: Render and deploy Helm
+        shell: bash
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.discord_webhook_url }}
+          GRAFANA_ADMIN_PASSWORD: ${{ secrets.grafana_admin_password }}
+        run: ./.github/scripts/deploy_helm.sh "${{ inputs.environment_name }}"
+
+      - name: Smoke test
+        id: smoke
+        shell: bash
+        continue-on-error: true
+        run: ./.github/scripts/smoke_test.sh "${{ inputs.environment_name }}"
+
+      - name: Auto rollback on smoke failure
+        if: steps.smoke.outcome == 'failure'
+        shell: bash
+        run: |
+          ./.github/scripts/rollback_helm.sh "${{ inputs.environment_name }}"
+          echo "Smoke test failed. Rolled back to previous revisions."
+          exit 1

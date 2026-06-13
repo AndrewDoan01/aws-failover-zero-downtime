@@ -1,0 +1,61 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: retail-store-sample-app
+  namespace: flux-system
+spec:
+  image: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app
+  interval: 5m
+  secretRef:
+    name: ecr-creds
+  provider: aws
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: retail-store-sample-app-prod
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: retail-store-sample-app
+  filterTags:
+    pattern: '^prod-v(?P<version>[0-9]+\.[0-9]+\.[0-9]+.*)$'
+    extract: '$version'
+  policy:
+    semver:
+      range: '>=1.0.0'
+  digestReflectionPolicy: Always
+  interval: 5m
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageUpdateAutomation
+metadata:
+  name: retail-store-sample-app-prod
+  namespace: flux-system
+spec:
+  interval: 10m
+  sourceRef:
+    kind: GitRepository
+    name: aws-retail-store-sample-app
+  git:
+    commit:
+      author:
+        name: fluxbot
+        email: fluxcdbot@users.noreply.github.com
+    push:
+      branch: main
+  update:
+    path: deploy/clusters/prod
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: catalog-app-repo
+  namespace: flux-system
+spec:
+  image: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-catalog
+  interval: 5m
+  secretRef:
+    name: ecr-creds
+  provider: aws
+

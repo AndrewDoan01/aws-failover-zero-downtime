@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: retail-store-sample-prod
+resources:
+  - namespace.yaml
+  - ../../base
+images:
+  - name: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app
+    newTag: prod-v1.0.1 # {"$imagepolicy": "flux-system:catalog-prod:tag"}
+    digest: "sha256:8bce809090c0f4c9d47559eb1a59e16eb388d5519567c21973cae9aa08e3ab6e" # {"$imagepolicy": "flux-system:catalog-prod:digest"}
+patches:
+  - path: deployment-patch.yaml
+  - path: configmap-patch.yaml
+  - path: ingress-patch.yaml

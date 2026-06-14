@@ -89,9 +89,19 @@ def handler(event, context):
 
     # Trigger GitHub Actions auto failover workflow via Repository Dispatch API
     github_token = os.environ.get("GITHUB_TOKEN")
+    if not github_token or not github_token.strip():
+        try:
+            ssm_client = boto3.client("ssm", region_name="ap-southeast-1")
+            param = ssm_client.get_parameter(Name="/github/token", WithDecryption=True)
+            github_token = param["Parameter"]["Value"]
+            logger.info("Retrieved GITHUB_TOKEN from SSM Parameter Store (/github/token)")
+        except Exception as ssm_err:
+            logger.warning("Could not retrieve GITHUB_TOKEN from SSM: %s", str(ssm_err))
+
     if github_token and github_token.strip():
         import urllib.request
         import json
+
         
         url = "https://api.github.com/repos/AndrewDoan01/aws-failover-zero-downtime/dispatches"
         headers = {

@@ -41,6 +41,19 @@ data "aws_iam_policy_document" "lambda_permissions" {
 
     resources = ["*"]
   }
+
+  statement {
+    sid    = "SsmParameterRead"
+    effect = "Allow"
+
+    actions = [
+      "ssm:GetParameter"
+    ]
+
+    resources = [
+      "arn:aws:ssm:ap-southeast-1:*:parameter/github/token"
+    ]
+  }
 }
 
 data "archive_file" "lambda_package" {

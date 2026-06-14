@@ -12,6 +12,7 @@ permissions:
 jobs:
   bootstrap-flux:
     runs-on: ubuntu-latest
+    environment: prod
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4

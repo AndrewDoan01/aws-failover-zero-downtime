@@ -107,12 +107,14 @@ resource "aws_lambda_function" "promote_replica" {
 
   environment {
     variables = {
-      PRIMARY_DB_IDENTIFIER   = var.primary_db_identifier
-      SECONDARY_DB_IDENTIFIER = var.secondary_db_identifier
-      SECONDARY_REGION        = var.secondary_region
-      BACKUP_RETENTION_DAYS   = tostring(var.promoted_backup_retention_days)
-      DRY_RUN                 = tostring(var.enable_dry_run)
-      GITHUB_TOKEN            = var.github_token
+      PRIMARY_DB_IDENTIFIER            = var.primary_db_identifier
+      SECONDARY_DB_IDENTIFIER          = var.secondary_db_identifier
+      PRIMARY_POSTGRES_DB_IDENTIFIER   = var.primary_postgres_db_identifier
+      SECONDARY_POSTGRES_DB_IDENTIFIER = var.secondary_postgres_db_identifier
+      SECONDARY_REGION                 = var.secondary_region
+      BACKUP_RETENTION_DAYS            = tostring(var.promoted_backup_retention_days)
+      DRY_RUN                          = tostring(var.enable_dry_run)
+      GITHUB_TOKEN                     = var.github_token
     }
   }
 
@@ -138,7 +140,7 @@ resource "aws_db_event_subscription" "primary_failover" {
   sns_topic = aws_sns_topic.failover_events.arn
 
   source_type = "db-instance"
-  source_ids  = [var.primary_db_identifier]
+  source_ids  = compact([var.primary_db_identifier, var.primary_postgres_db_identifier])
 
   event_categories = var.rds_event_categories
   enabled          = true

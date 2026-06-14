@@ -15,6 +15,8 @@ FAILOVER_KEYWORDS = (
     "unavailable",
     "availability",
     "recovery",
+    "shutdown",
+    "stopped",
 )
 
 
@@ -50,42 +52,78 @@ def handler(event, context):
         }
 
     secondary_region = os.environ["SECONDARY_REGION"]
-    secondary_db_identifier = os.environ["SECONDARY_DB_IDENTIFIER"]
     dry_run = os.environ.get("DRY_RUN", "false").lower() == "true"
     backup_retention_days = int(os.environ.get("BACKUP_RETENTION_DAYS", "7"))
 
-    rds_client = boto3.client("rds", region_name=secondary_region)
+    primary_db = os.environ.get("PRIMARY_DB_IDENTIFIER")
+    secondary_db = os.environ.get("SECONDARY_DB_IDENTIFIER")
+    primary_postgres_db = os.environ.get("PRIMARY_POSTGRES_DB_IDENTIFIER")
+    secondary_postgres_db = os.environ.get("SECONDARY_POSTGRES_DB_IDENTIFIER")
 
-    if _is_already_promoted(rds_client, secondary_db_identifier):
-        logger.info("Secondary database %s is already promoted", secondary_db_identifier)
+    to_promote = []
+    
+    # Parse event message to check source
+    source_id = None
+    try:
+        event_data = json.loads(message)
+        source_id = event_data.get("Source ID")
+    except Exception:
+        pass
+
+    if source_id:
+        if primary_db and source_id == primary_db:
+            if secondary_db:
+                to_promote.append(secondary_db)
+        elif primary_postgres_db and source_id == primary_postgres_db:
+            if secondary_postgres_db:
+                to_promote.append(secondary_postgres_db)
+        else:
+            # Ambiguous/unrecognized source but matches failover event, promote both to be safe
+            if secondary_db:
+                to_promote.append(secondary_db)
+            if secondary_postgres_db:
+                to_promote.append(secondary_postgres_db)
+    else:
+        # Fallback/manual trigger: promote both
+        if secondary_db:
+            to_promote.append(secondary_db)
+        if secondary_postgres_db:
+            to_promote.append(secondary_postgres_db)
+
+    if not to_promote:
         return {
-            "status": "already_promoted",
-            "secondary_db_identifier": secondary_db_identifier,
+            "status": "ignored",
+            "reason": "no database identifiers matched to promote",
         }
 
-    if dry_run:
+    rds_client = boto3.client("rds", region_name=secondary_region)
+    promoted_statuses = {}
+
+    for db_id in to_promote:
+        if _is_already_promoted(rds_client, db_id):
+            logger.info("Secondary database %s is already promoted", db_id)
+            promoted_statuses[db_id] = "already_promoted"
+            continue
+
+        if dry_run:
+            logger.info(
+                "Dry run enabled; would promote read replica %s in %s",
+                db_id,
+                secondary_region,
+            )
+            promoted_statuses[db_id] = "dry_run"
+            continue
+
+        response = rds_client.promote_read_replica(
+            DBInstanceIdentifier=db_id,
+            BackupRetentionPeriod=backup_retention_days,
+        )
         logger.info(
-            "Dry run enabled; would promote read replica %s in %s",
-            secondary_db_identifier,
+            "Promotion requested for replica %s in %s",
+            db_id,
             secondary_region,
         )
-        return {
-            "status": "dry_run",
-            "secondary_db_identifier": secondary_db_identifier,
-            "secondary_region": secondary_region,
-        }
-
-    response = rds_client.promote_read_replica(
-        DBInstanceIdentifier=secondary_db_identifier,
-        BackupRetentionPeriod=backup_retention_days,
-        ApplyImmediately=True,
-    )
-
-    logger.info(
-        "Promotion requested for replica %s in %s",
-        secondary_db_identifier,
-        secondary_region,
-    )
+        promoted_statuses[db_id] = "promotion_requested"
 
     # Trigger GitHub Actions auto failover workflow via Repository Dispatch API
     github_token = os.environ.get("GITHUB_TOKEN")
@@ -102,7 +140,6 @@ def handler(event, context):
         import urllib.request
         import json
 
-        
         url = "https://api.github.com/repos/AndrewDoan01/aws-failover-zero-downtime/dispatches"
         headers = {
             "Authorization": f"Bearer {github_token.strip()}",
@@ -122,8 +159,7 @@ def handler(event, context):
         logger.warning("GITHUB_TOKEN is not set or empty, skipping GitHub Actions trigger")
 
     return {
-        "status": "promotion_requested",
-        "secondary_db_identifier": secondary_db_identifier,
+        "status": "completed",
+        "results": promoted_statuses,
         "secondary_region": secondary_region,
-        "db_instance_status": response["DBInstance"]["DBInstanceStatus"],
     }

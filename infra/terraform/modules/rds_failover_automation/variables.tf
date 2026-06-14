@@ -91,3 +91,16 @@ variable "github_token" {
   default     = ""
 }
 
+variable "primary_postgres_db_identifier" {
+  description = "Primary PostgreSQL database identifier used as the failover event source."
+  type        = string
+  default     = ""
+}
+
+variable "secondary_postgres_db_identifier" {
+  description = "Secondary PostgreSQL database identifier used for read replica promotion."
+  type        = string
+  default     = ""
+}
+
+

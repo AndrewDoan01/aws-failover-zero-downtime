@@ -56,6 +56,32 @@ patches:
                   limits:
                     cpu: "1"
                     memory: 2Gi
+  - patch: |
+      apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      metadata:
+        name: carts
+      spec:
+        minReplicas: 1
+  - patch: |
+      apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      metadata:
+        name: checkout
+      spec:
+        minReplicas: 1
+  - patch: |
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: orders
+      data:
+        RETAIL_ORDERS_PERSISTENCE_PROVIDER: postgres
+        RETAIL_ORDERS_PERSISTENCE_ENDPOINT: ha-db-postgres.clsgq4wuo1y4.ap-southeast-1.rds.amazonaws.com:5432
+        RETAIL_ORDERS_PERSISTENCE_NAME: orders
+        RETAIL_ORDERS_PERSISTENCE_USERNAME: postgres
+        RETAIL_ORDERS_PERSISTENCE_PASSWORD: Doanquocan#2005
+
 
 
 

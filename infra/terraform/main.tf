@@ -319,7 +319,41 @@ resource "aws_kms_key" "secondary_db" {
   provider                = aws.secondary
   description             = "KMS key for secondary database replica encryption"
   deletion_window_in_days = 7
+  policy                  = data.aws_iam_policy_document.kms_secondary[0].json
 }
+
+data "aws_iam_policy_document" "kms_secondary" {
+  count = var.enable_secondary_cluster ? 1 : 0
+  statement {
+    sid       = "Enable IAM User Permissions"
+    effect    = "Allow"
+    actions   = ["kms:*"]
+    resources = ["*"]
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+  }
+
+  statement {
+    sid       = "Allow RDS to use the key"
+    effect    = "Allow"
+    actions   = [
+      "kms:Encrypt",
+      "kms:Decrypt",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*",
+      "kms:DescribeKey",
+      "kms:CreateGrant"
+    ]
+    resources = ["*"]
+    principals {
+      type        = "Service"
+      identifiers = ["rds.amazonaws.com"]
+    }
+  }
+}
+
 
 module "secondary_database" {
   count = var.enable_secondary_cluster ? 1 : 0
@@ -477,6 +511,7 @@ locals {
 resource "aws_lb_target_group_attachment" "secondary_ui" {
   for_each = toset(local.secondary_ui_ips)
 
+  provider         = aws.secondary
   target_group_arn = aws_lb_target_group.secondary[0].arn
   target_id        = each.value
   port             = 8080
@@ -779,6 +814,43 @@ module "github_ecr_role" {
   repository_arns = concat(values(module.ecr.repository_arns), values(module.ecr_secondary.repository_arns))
 }
 
+resource "aws_kms_key" "primary_db" {
+  description             = "KMS key for primary database encryption"
+  deletion_window_in_days = 7
+  policy                  = data.aws_iam_policy_document.kms_primary.json
+}
+
+data "aws_iam_policy_document" "kms_primary" {
+  statement {
+    sid       = "Enable IAM User Permissions"
+    effect    = "Allow"
+    actions   = ["kms:*"]
+    resources = ["*"]
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+  }
+
+  statement {
+    sid       = "Allow RDS to use the key"
+    effect    = "Allow"
+    actions   = [
+      "kms:Encrypt",
+      "kms:Decrypt",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*",
+      "kms:DescribeKey",
+      "kms:CreateGrant"
+    ]
+    resources = ["*"]
+    principals {
+      type        = "Service"
+      identifiers = ["rds.amazonaws.com"]
+    }
+  }
+}
+
 module "primary_postgres_database" {
   source = "./modules/database"
 
@@ -787,8 +859,9 @@ module "primary_postgres_database" {
   username       = "postgres"
   db_password    = var.db_password
   engine         = "postgres"
-  engine_version = "16.9"
+  engine_version = "16.13"
   port           = 5432
+  kms_key_id     = aws_kms_key.primary_db.arn
 
   vpc_id                     = module.primary_vpc.vpc_id
   subnet_ids                 = module.primary_vpc.private_subnet_ids

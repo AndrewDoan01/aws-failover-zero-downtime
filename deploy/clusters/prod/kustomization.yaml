@@ -10,7 +10,7 @@ resources:
   - ../../services/ui/base
 replicas:
   - name: carts
-    count: 5
+    count: 1
   - name: checkout
     count: 4
   - name: orders
@@ -36,5 +36,25 @@ images:
   - name: public.ecr.aws/aws-containers/retail-store-sample-ui
     newName: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-ui
     newTag: prod-v1.0.4 # {"$imagepolicy": "flux-system:ui-prod:tag"}
+
+patches:
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: carts
+      spec:
+        template:
+          spec:
+            containers:
+              - name: carts
+                resources:
+                  requests:
+                    cpu: 500m
+                    memory: 1Gi
+                  limits:
+                    cpu: "1"
+                    memory: 2Gi
+
 
 

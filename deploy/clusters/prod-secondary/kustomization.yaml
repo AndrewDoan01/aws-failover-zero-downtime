@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../prod
+
+patches:
+  - patch: |
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: orders
+      data:
+        RETAIL_ORDERS_PERSISTENCE_ENDPOINT: ha-db-postgres-secondary.crs2eqw0u0wx.ap-northeast-1.rds.amazonaws.com:5432

@@ -47,7 +47,7 @@ jobs:
           flux bootstrap github \
             --owner=AndrewDoan01 \
             --repository=aws-failover-zero-downtime \
-            --branch=chore/flux \
+            --branch=main \
             --path=deploy/flux-system-secondary \
             --personal
 

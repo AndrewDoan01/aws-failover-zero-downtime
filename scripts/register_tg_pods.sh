@@ -18,7 +18,7 @@ fi
 echo "Target Group ARN: $TG_ARN"
 
 echo "Retrieving Pod IPs..."
-POD_IPS=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=retail-store-sample-app -o jsonpath='{.items[*].status.podIP}')
+POD_IPS=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=ui -o jsonpath='{.items[*].status.podIP}')
 if [ -z "$POD_IPS" ]; then
   echo "No pods found in namespace $NAMESPACE."
   exit 0

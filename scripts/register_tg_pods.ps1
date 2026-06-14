@@ -19,8 +19,8 @@ if ($null -eq $tgArn -or $tgArn -eq "None") {
 Write-Host "Target Group ARN: $tgArn"
 
 # 3. Get Pod IPs
-Write-Host "Retrieving Pod IPs for deployment retail-store-sample-app in namespace $Namespace..."
-$podIps = (kubectl get pods -n $Namespace -l app.kubernetes.io/name=retail-store-sample-app -o jsonpath='{.items[*].status.podIP}')
+Write-Host "Retrieving Pod IPs for deployment ui in namespace $Namespace..."
+$podIps = (kubectl get pods -n $Namespace -l app.kubernetes.io/name=ui -o jsonpath='{.items[*].status.podIP}')
 if ([string]::IsNullOrEmpty($podIps)) {
     Write-Warning "No running pods found for retail-store-sample-app in namespace $Namespace."
     exit 0

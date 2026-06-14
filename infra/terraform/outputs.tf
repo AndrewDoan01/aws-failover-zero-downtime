@@ -112,3 +112,9 @@ output "route53_secondary_fqdn" {
 output "primary_postgres_endpoint" {
   value = module.primary_postgres_database.db_instance_endpoint
 }
+
+output "db_password" {
+  value     = var.db_password
+  sensitive = true
+}
+

@@ -12,13 +12,14 @@ replicas:
   - name: carts
     count: 1
   - name: checkout
-    count: 4
+    count: 1
   - name: orders
-    count: 4
+    count: 1
   - name: ui
     count: 4
   - name: catalog
     count: 4
+
 images:
   - name: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app
     newName: 339140803989.dkr.ecr.ap-southeast-1.amazonaws.com/aws-retail-store-sample-app-catalog

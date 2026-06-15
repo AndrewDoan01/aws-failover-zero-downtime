@@ -369,6 +369,7 @@ module "secondary_database" {
   subnet_ids          = module.secondary_vpc[0].private_subnet_ids
   replicate_source_db = module.primary_database.db_instance_arn
   kms_key_id          = aws_kms_key.secondary_db[0].arn
+  allowed_cidr_blocks = [var.vpc_secondary_cidr]
 
   tags = merge(local.secondary_common_tags, {
     Service      = "database"
@@ -889,6 +890,8 @@ module "secondary_postgres_database" {
   subnet_ids          = module.secondary_vpc[0].private_subnet_ids
   replicate_source_db = module.primary_postgres_database.db_instance_arn
   kms_key_id          = aws_kms_key.secondary_db[0].arn
+  allowed_cidr_blocks = [var.vpc_secondary_cidr]
+  port                = 5432
 
   tags = merge(local.secondary_common_tags, {
     Service      = "database-postgres"

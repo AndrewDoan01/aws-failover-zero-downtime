@@ -21,6 +21,8 @@ provider "aws" {
 
 data "aws_caller_identity" "current" {}
 
+data "aws_partition" "current" {}
+
 data "aws_eks_cluster_auth" "primary" {
   name = module.primary_eks.cluster_name
 }
@@ -69,8 +71,8 @@ locals {
         }
       }
     },
-    { for env, arn in try(module.oidc_iam[0].role_arns, {}) : "deploy-${env}" => {
-      principal_arn = arn
+    var.enable_oidc_iam_roles ? { for env in var.oidc_deploy_environments : "deploy-${env}" => {
+      principal_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:role/${var.oidc_role_name_prefix}-${env}"
       policy_associations = {
         admin = {
           policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
@@ -79,7 +81,7 @@ locals {
           }
         }
       }
-    } }
+    } } : {}
   )
 
   primary_common_tags = merge(local.base_tags, {

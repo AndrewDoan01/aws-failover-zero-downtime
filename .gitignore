@@ -33,7 +33,7 @@ accesskey.csv
 
 # lock state file
 .terraform.lock.hcl
-docs
+
 
 # Deploy states containing secrets
 .deploy_state/
